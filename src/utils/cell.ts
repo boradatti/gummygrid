@@ -79,6 +79,10 @@ export class Cell {
     return this.filled === true;
   }
 
+  public isEmpty() {
+    return !this.filled;
+  }
+
   private getNeighborCoordinates(side: CellNeighborDirection): CellCoordinates {
     switch (side) {
       case 'LEFT':

@@ -1,4 +1,4 @@
-import { Cell } from '@/utils/cell';
+import { Cell, CELL_NEIGHBOR_DIRECTIONS } from '@/utils/cell';
 import type { CellCoordinates } from '@/utils/cell';
 
 type GridInnerConfig = {
@@ -226,5 +226,27 @@ export class Grid {
     );
     const loggableGrid = loggableGridArr.map((row) => row.join(' ')).join('\n');
     console.log(loggableGrid);
+  }
+
+  public *iterateIslandCells() {
+    const visited = new Set<Cell>();
+
+    for (const cell of this.iterateCells()) {
+      if (visited.has(cell) || cell.isEmpty()) continue;
+      visited.add(cell);
+      const stack: Array<Cell> = [cell];
+      while (stack.length > 0) {
+        const cell = stack.pop()!;
+        for (const direction of CELL_NEIGHBOR_DIRECTIONS) {
+          const neighbor = cell.getNeighbor(direction);
+          if (neighbor && !visited.has(neighbor) && neighbor.isFilled()) {
+            visited.add(neighbor);
+            stack.push(neighbor);
+          }
+        }
+      }
+
+      yield cell;
+    }
   }
 }

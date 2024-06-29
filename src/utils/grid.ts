@@ -249,4 +249,25 @@ export class Grid {
       yield cell;
     }
   }
+
+  public *iteratePoolCells() {
+    function isPool(cell: Cell | undefined): boolean {
+      if (!cell) return false;
+      if (visited.has(cell) || cell.isFilled()) return true;
+      visited.add(cell);
+      const left = isPool(cell.getNeighbor('LEFT'));
+      const top = isPool(cell.getNeighbor('TOP'));
+      const right = isPool(cell.getNeighbor('RIGHT'));
+      const bottom = isPool(cell.getNeighbor('BOTTOM'));
+      // because returning prematurely leads to false positives
+      return left && top && right && bottom;
+    }
+
+    const visited = new Set<Cell>();
+    for (const cell of this.iterateCells()) {
+      if (!visited.has(cell) && cell.isEmpty() && isPool(cell)) {
+        yield cell;
+      }
+    }
+  }
 }

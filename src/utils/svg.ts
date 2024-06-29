@@ -145,6 +145,7 @@ export class SVG {
 
     .empty .cell-corner {
       fill: var(--cell-color);
+      rx: ${this.needsConnectedCorners() ? '0' : `var(--cell-rounding-outer)`};
     }
 
     .empty .edge-horizontal-top-left {
@@ -240,7 +241,7 @@ export class SVG {
 
     if (cell.hasFilledNeighbor('TOP') && cell.hasFilledNeighbor('LEFT')) {
       els.push('<rect class="cell-corner cell-corner-top-left"/>');
-      if (!this.hasGutter()) {
+      if (!this.hasGutter() && this.needsConnectedCorners()) {
         els.push('<rect class="edge edge-horizontal-top-left"/>');
         els.push('<rect class="edge edge-vertical-top-left"/>');
       }
@@ -248,7 +249,7 @@ export class SVG {
 
     if (cell.hasFilledNeighbor('TOP') && cell.hasFilledNeighbor('RIGHT')) {
       els.push('<rect class="cell-corner cell-corner-top-right"/>');
-      if (!this.hasGutter()) {
+      if (!this.hasGutter() && this.needsConnectedCorners()) {
         els.push('<rect class="edge edge-horizontal-top-right"/>');
         els.push('<rect class="edge edge-vertical-top-right"/>');
       }
@@ -256,7 +257,7 @@ export class SVG {
 
     if (cell.hasFilledNeighbor('BOTTOM') && cell.hasFilledNeighbor('LEFT')) {
       els.push('<rect class="cell-corner cell-corner-bottom-left"/>');
-      if (!this.hasGutter()) {
+      if (!this.hasGutter() && this.needsConnectedCorners()) {
         els.push('<rect class="edge edge-horizontal-bottom-left"/>');
         els.push('<rect class="edge edge-vertical-bottom-left"/>');
       }
@@ -264,7 +265,7 @@ export class SVG {
 
     if (cell.hasFilledNeighbor('BOTTOM') && cell.hasFilledNeighbor('RIGHT')) {
       els.push('<rect class="cell-corner cell-corner-bottom-right"/>');
-      if (!this.hasGutter()) {
+      if (!this.hasGutter() && this.needsConnectedCorners()) {
         els.push('<rect class="edge edge-horizontal-bottom-right"/>');
         els.push('<rect class="edge edge-vertical-bottom-right"/>');
       }

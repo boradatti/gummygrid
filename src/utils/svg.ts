@@ -3,7 +3,7 @@ import type {
   Cell,
   CellEdgeOrientation,
   CellCoordinates,
-  CellNeighborSide,
+  CellNeighborDirection,
 } from './cell';
 
 type SVGInnerConfig = {
@@ -357,7 +357,7 @@ export class SVG {
     }
   }
 
-  private getFormattedCorner(side: CellNeighborSide): string {
+  private getFormattedCorner(side: CellNeighborDirection): string {
     return `<rect class="cell-corner cell-corner-${CELL_CORNER_CSS[side]}"/>`;
   }
 
@@ -438,7 +438,7 @@ export class SVG {
   }
 }
 
-const CELL_CORNER_CSS: Record<CellNeighborSide, string> = {
+const CELL_CORNER_CSS: Record<CellNeighborDirection, string> = {
   TOP: 'top',
   BOTTOM: 'bottom',
   LEFT: 'left',

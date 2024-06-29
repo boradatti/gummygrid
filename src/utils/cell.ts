@@ -79,7 +79,7 @@ export class Cell {
     return this.filled === true;
   }
 
-  private getNeighborCoordinates(side: CellNeighborSide): CellCoordinates {
+  private getNeighborCoordinates(side: CellNeighborDirection): CellCoordinates {
     switch (side) {
       case 'LEFT':
         return { col: this.col - 1, row: this.row };
@@ -100,11 +100,11 @@ export class Cell {
     }
   }
 
-  public getNeighbor(side: CellNeighborSide): Cell {
+  public getNeighbor(side: CellNeighborDirection): Cell | undefined {
     return this.grid.getCell(this.getNeighborCoordinates(side));
   }
 
-  public hasFilledNeighbor(side: CellNeighborSide): boolean {
+  public hasFilledNeighbor(side: CellNeighborDirection): boolean {
     const neighborCoords = this.getNeighborCoordinates(side);
     switch (side) {
       case 'LEFT':
@@ -151,14 +151,20 @@ export class Cell {
 
 export type CellCoordinates = { col: number; row: number };
 
-export type CellNeighborSide =
-  | 'LEFT'
-  | 'TOP_LEFT'
-  | 'TOP'
-  | 'TOP_RIGHT'
-  | 'RIGHT'
-  | 'BOTTOM_RIGHT'
-  | 'BOTTOM'
-  | 'BOTTOM_LEFT';
+export const CELL_NEIGHBOR_SIDES = ['LEFT', 'TOP', 'RIGHT', 'BOTTOM'] as const;
+export const CELL_NEIGHBOR_CORNERS = [
+  'TOP_LEFT',
+  'TOP_RIGHT',
+  'BOTTOM_RIGHT',
+  'BOTTOM_LEFT',
+] as const;
+export const CELL_NEIGHBOR_DIRECTIONS = [
+  ...CELL_NEIGHBOR_SIDES,
+  ...CELL_NEIGHBOR_CORNERS,
+] as const;
+
+export type CellNeighborSide = (typeof CELL_NEIGHBOR_SIDES)[number];
+export type CellNeighborCorner = (typeof CELL_NEIGHBOR_CORNERS)[number];
+export type CellNeighborDirection = (typeof CELL_NEIGHBOR_DIRECTIONS)[number];
 
 export type CellEdgeOrientation = 'VERTICAL' | 'HORIZONTAL';

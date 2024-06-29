@@ -34,7 +34,7 @@ export class Cell {
   }
 
   public fillHorizontalParallel() {
-    this.getHorizontalParallel().fill();
+    this.getHorizontalParallel()!.fill();
   }
 
   private getVerticalParallelCoords() {
@@ -46,7 +46,7 @@ export class Cell {
 
   private getVerticalParallel() {
     const coords = this.getVerticalParallelCoords();
-    return this.grid.getCell(coords);
+    return this.grid.getCell(coords)!;
   }
 
   public fillVerticalParallel() {

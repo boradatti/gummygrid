@@ -62,7 +62,7 @@ export class Grid {
   }
 
   public hasFilledCell(coord: CellCoordinates) {
-    return this.getCell(coord).isFilled();
+    return this.getCell(coord)!.isFilled();
   }
 
   public build() {
@@ -80,7 +80,7 @@ export class Grid {
   }
 
   public getCell({ row, col }: CellCoordinates) {
-    return this.grid[row]?.[col]!;
+    return this.grid[row]?.[col];
   }
 
   private ensureTopBottomCells() {
@@ -90,11 +90,11 @@ export class Grid {
     if (!this.hasFilledCellsBottom()) rows.push(this.size.rows - 1);
     for (const row of rows) {
       const col = this.pickNumber(0, Math.floor(this.size.columns / 2));
-      this.fillCellAndParallel(this.getCell({ row, col }));
+      this.fillCellAndParallel(this.getCell({ row, col })!);
       for (const c of cols) {
         if (c === col) continue;
         if (this.wannaFill()) {
-          this.fillCellAndParallel(this.getCell({ row, col: c }));
+          this.fillCellAndParallel(this.getCell({ row, col: c })!);
           break;
         }
       }
@@ -108,11 +108,11 @@ export class Grid {
     if (!this.hasFilledCellsRight()) cols.push(this.size.columns - 1);
     for (const col of cols) {
       const row = this.pickNumber(0, Math.floor(this.size.rows / 2));
-      this.fillCellAndParallel(this.getCell({ row, col }));
+      this.fillCellAndParallel(this.getCell({ row, col })!);
       for (const r of rows) {
         if (r === row) continue;
         if (this.wannaFill()) {
-          this.fillCellAndParallel(this.getCell({ col, row: r }));
+          this.fillCellAndParallel(this.getCell({ col, row: r })!);
           break;
         }
       }

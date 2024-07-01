@@ -1,5 +1,5 @@
 import { Cell, CELL_NEIGHBOR_DIRECTIONS } from '@/utils/cell';
-import type { CellCoordinates } from '@/utils/cell';
+import type { CellCoordinates, CellNeighborDirection } from '@/utils/cell';
 
 type GridInnerConfig = {
   size: number | { rows: number; columns: number };
@@ -251,22 +251,36 @@ export class Grid {
   }
 
   public *iteratePoolCells() {
-    function isPool(cell: Cell | undefined): boolean {
-      if (!cell) return false;
+    function isPool(
+      cell: Cell | undefined,
+      isEdge: { reached: boolean }
+    ): boolean {
+      if (!cell) {
+        isEdge.reached = true;
+        return false;
+      }
       if (visited.has(cell) || cell.isFilled()) return true;
       visited.add(cell);
-      const left = isPool(cell.getNeighbor('LEFT'));
-      const top = isPool(cell.getNeighbor('TOP'));
-      const right = isPool(cell.getNeighbor('RIGHT'));
-      const bottom = isPool(cell.getNeighbor('BOTTOM'));
-      // because returning prematurely leads to false positives
-      return left && top && right && bottom;
+
+      let isEnclosed = true;
+      isEnclosed = isPool(cell.getNeighbor('LEFT'), isEdge) && isEnclosed;
+      isEnclosed = isPool(cell.getNeighbor('TOP'), isEdge) && isEnclosed;
+      isEnclosed = isPool(cell.getNeighbor('RIGHT'), isEdge) && isEnclosed;
+      isEnclosed = isPool(cell.getNeighbor('BOTTOM'), isEdge) && isEnclosed;
+
+      const answer = isEnclosed && !isEdge.reached;
+      cell.markPooled(answer);
+
+      return answer;
     }
 
     const visited = new Set<Cell>();
     for (const cell of this.iterateCells()) {
-      if (!visited.has(cell) && cell.isEmpty() && isPool(cell)) {
-        yield cell;
+      if (!visited.has(cell) && cell.isEmpty()) {
+        let isEdge = { reached: false };
+        if (isPool(cell, isEdge) && !isEdge.reached) {
+          yield cell;
+        }
       }
     }
   }

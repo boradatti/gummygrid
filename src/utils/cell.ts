@@ -3,6 +3,7 @@ import type { Grid } from './grid';
 export class Cell {
   private grid: Grid;
   private filled: boolean;
+  private pooled: boolean | null;
   public col: number;
   public row: number;
 
@@ -11,6 +12,15 @@ export class Cell {
     this.col = coords.col;
     this.row = coords.row;
     this.filled = false;
+    this.pooled = null;
+  }
+
+  public markPooled(value: boolean) {
+    this.pooled = value;
+  }
+
+  public belongsToPool() {
+    return this.pooled;
   }
 
   public fill() {
@@ -105,50 +115,54 @@ export class Cell {
   }
 
   public getNeighbor(side: CellNeighborDirection): Cell | undefined {
-    return this.grid.getCell(this.getNeighborCoordinates(side));
+    return this._getNeighbor({ onSide: side });
   }
 
-  public hasFilledNeighbor(side: CellNeighborDirection): boolean {
-    const neighborCoords = this.getNeighborCoordinates(side);
-    switch (side) {
-      case 'LEFT':
-        return this.col !== 0 && this.grid.hasFilledCell(neighborCoords);
-      case 'TOP_LEFT':
-        return (
-          this.col !== 0 &&
-          this.row !== 0 &&
-          this.grid.hasFilledCell(neighborCoords)
-        );
-      case 'TOP':
-        return this.row !== 0 && this.grid.hasFilledCell(neighborCoords);
-      case 'TOP_RIGHT':
-        return (
-          this.col !== this.grid.size.columns - 1 &&
-          this.row !== 0 &&
-          this.grid.hasFilledCell(neighborCoords)
-        );
-      case 'RIGHT':
-        return (
-          this.col !== this.grid.size.columns - 1 &&
-          this.grid.hasFilledCell(neighborCoords)
-        );
-      case 'BOTTOM_RIGHT':
-        return (
-          this.col !== this.grid.size.columns - 1 &&
-          this.row !== this.grid.size.rows - 1 &&
-          this.grid.hasFilledCell(neighborCoords)
-        );
-      case 'BOTTOM':
-        return (
-          this.row !== this.grid.size.rows - 1 &&
-          this.grid.hasFilledCell(neighborCoords)
-        );
-      case 'BOTTOM_LEFT':
-        return (
-          this.col !== 0 &&
-          this.row !== this.grid.size.rows - 1 &&
-          this.grid.hasFilledCell(neighborCoords)
-        );
+  private _getNeighbor(options: {
+    onSide: CellNeighborDirection;
+    status?: 'filled' | 'empty' | 'any';
+  }) {
+    let { onSide, status } = options;
+    status ??= 'any';
+    const neighbor = this.grid.getCell(this.getNeighborCoordinates(onSide));
+    if (!neighbor) return;
+    if (status == 'any') return neighbor;
+    if (status == 'filled' && neighbor.isFilled()) return neighbor;
+    if (status == 'empty' && neighbor.isEmpty()) return neighbor;
+  }
+
+  private _hasNeighbor(options: {
+    onSide: CellNeighborDirection;
+    status?: 'filled' | 'empty' | 'any';
+  }) {
+    return !!this._getNeighbor(options);
+  }
+
+  public getEqualNeighbor(side: CellNeighborDirection) {
+    return this._getNeighbor({
+      onSide: side,
+      status: this.isFilled() ? 'filled' : 'empty',
+    });
+  }
+
+  public hasFilledNeighbor(side: CellNeighborDirection) {
+    const neighbor = this.getNeighbor(side);
+    return neighbor && neighbor.isFilled();
+  }
+
+  public hasEqualNeighbor(side: CellNeighborDirection) {
+    return this._hasNeighbor({
+      onSide: side,
+      status: this.isFilled() ? 'filled' : 'empty',
+    });
+  }
+
+  public *iterateDiagonalNeighbors() {
+    for (const corner of CELL_NEIGHBOR_CORNERS) {
+      const neighbor = this.getNeighbor(corner);
+      if (neighbor) {
+        yield { neighbor, corner };
+      }
     }
   }
 }

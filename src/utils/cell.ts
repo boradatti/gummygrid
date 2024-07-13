@@ -19,6 +19,33 @@ export class Cell {
     this.pooled = value;
   }
 
+  public isEdgeCell() {
+    return (
+      this.row == 0 ||
+      this.row == this.grid.size.rows - 1 ||
+      this.col == 0 ||
+      this.col == this.grid.size.columns - 1
+    );
+  }
+
+  public *iterateAllNeighbors() {
+    for (const direction of CELL_NEIGHBOR_DIRECTIONS) {
+      const neighbor = this.getNeighbor(direction);
+      if (neighbor) {
+        yield neighbor;
+      }
+    }
+  }
+
+  public *iterateOrthogonalNeighbors() {
+    for (const side of CELL_NEIGHBOR_SIDES) {
+      const neighbor = this.getNeighbor(side);
+      if (neighbor) {
+        yield neighbor;
+      }
+    }
+  }
+
   public belongsToPool() {
     return this.pooled;
   }
@@ -147,7 +174,7 @@ export class Cell {
 
   public hasFilledNeighbor(side: CellNeighborDirection) {
     const neighbor = this.getNeighbor(side);
-    return neighbor && neighbor.isFilled();
+    return neighbor !== undefined && neighbor.isFilled();
   }
 
   public hasEqualNeighbor(side: CellNeighborDirection) {

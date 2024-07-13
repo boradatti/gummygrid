@@ -251,38 +251,45 @@ export class Grid {
   }
 
   public *iteratePoolCells() {
-    function isPool(
-      cell: Cell | undefined,
-      isEdge: { reached: boolean }
-    ): boolean {
-      if (!cell) {
-        isEdge.reached = true;
-        return false;
-      }
-      if (visited.has(cell) || cell.isFilled()) return true;
-      visited.add(cell);
-
-      let isEnclosed = true;
-      isEnclosed = isPool(cell.getNeighbor('LEFT'), isEdge) && isEnclosed;
-      isEnclosed = isPool(cell.getNeighbor('TOP'), isEdge) && isEnclosed;
-      isEnclosed = isPool(cell.getNeighbor('RIGHT'), isEdge) && isEnclosed;
-      isEnclosed = isPool(cell.getNeighbor('BOTTOM'), isEdge) && isEnclosed;
-
-      const answer = isEnclosed && !isEdge.reached;
-      cell.markPooled(answer);
-
-      return answer;
-    }
-
-    const visited = new Set<Cell>();
+    const poolCells = new Set<Cell>();
+    const spillCells = new Set<Cell>();
     for (const cell of this.iterateCells()) {
-      if (!visited.has(cell) && cell.isEmpty()) {
-        let isEdge = { reached: false };
-        if (isPool(cell, isEdge) && !isEdge.reached) {
-          yield cell;
+      if (cell.isEmpty()) {
+        if (cell.isEdgeCell()) {
+          spillCells.add(cell);
+        } else {
+          poolCells.add(cell); // i.e. let's first consider all non-edge empty cells to be pool cells
         }
       }
     }
+
+    // now let's exclude spill cells from the pool cell candidate set
+    for (const cell of spillCells) {
+      for (const neighbor of cell.iterateOrthogonalNeighbors()) {
+        if (poolCells.has(neighbor)) {
+          poolCells.delete(neighbor);
+          spillCells.add(neighbor);
+        }
+      }
+    }
+
+    // finally, let's yield the first cell we find in each pool
+    for (const cell of poolCells) {
+      let firstPoolCell = cell;
+      const stack: Cell[] = [cell];
+      while (stack.length) {
+        const neighborPoolCell = stack.pop()!;
+        poolCells.delete(neighborPoolCell);
+        neighborPoolCell.markPooled(true);
+        for (const neighbor of neighborPoolCell.iterateAllNeighbors()) {
+          if (poolCells.has(neighbor)) {
+            stack.push(neighbor);
+          }
+        }
+      }
+      yield firstPoolCell;
+    }
+  }
 
   public getMatrix() {
     return this.grid.map((r) => r.map((c) => +c.isFilled()));

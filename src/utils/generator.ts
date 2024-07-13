@@ -46,7 +46,7 @@ const defaultAvatarGeneratorConfig: AvatarGeneratorConfig = {
       inner: 0,
     },
     gutter: 0,
-    connectCorners: true,
+    flow: true,
     strokeWidth: 0,
   },
 };

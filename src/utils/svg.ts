@@ -10,7 +10,7 @@ type SVGInnerConfig = {
   backgroundColor: string;
   patternAreaRatio: number;
   cellColors: string[];
-  connectCorners: boolean;
+  flow: boolean;
   gutter: number;
   cellRounding: { inner: number; outer: number };
   strokeWidth: number;
@@ -21,25 +21,32 @@ type SVGInnerConfig = {
   };
 };
 
+type SVGCalculatedValues = {
+  ptnWidth: number;
+  ptnHeight: number;
+  backgroundWH: number;
+  cellRadius: { outer: number; inner: number };
+};
+
 export type SVGConfig = Omit<SVGInnerConfig, 'inner'>;
 
 export class SVG {
   private string: string = '';
   private readonly config: Readonly<SVGInnerConfig>;
+  private readonly calculated: Readonly<SVGCalculatedValues>;
 
   public constructor(config: SVGInnerConfig) {
+    this.validateConfig(config);
     this.config = config;
-    this.normalizeCellRounding();
+    this.calculated = this.getCalculatedValues();
   }
 
-  private normalizeCellRounding() {
-    const { inner, outer } = this.config.cellRounding;
+  private validateConfig(config: SVGInnerConfig) {
+    const { inner, outer } = config.cellRounding;
     if (inner < 0 || inner > 1 || outer < 0 || outer > 1)
       throw new Error(
         'Inner and outer rounding should both be numbers between 0 and 1'
       );
-    this.config.cellRounding.inner = (inner * this.config.inner.cellSize) / 2;
-    this.config.cellRounding.outer = (outer * this.config.inner.cellSize) / 2;
   }
 
   private pickCellColor() {
@@ -47,164 +54,39 @@ export class SVG {
   }
 
   private getFormattedCSS(): string {
+    // todo: implement color logic
     const css = `
     :root {
-      --cell-rounding-outer: ${this.config.cellRounding.outer}px;
-      --cell-rounding-inner: ${this.config.cellRounding.inner}px;
-      --cell-size: ${this.config.inner.cellSize}px;
-      --cell-color: ${this.pickCellColor()};
-      --gutter: ${this.config.gutter}px;
-      --num-rows: ${this.config.inner.gridSize.rows};
-      --num-columns: ${this.config.inner.gridSize.columns};
-      --background-color: ${this.config.backgroundColor};
-      --connect-corners-factor: ${+!this.config.connectCorners};
-    }
-
-    .background {
-      width: 100%;
-      height: 100%;
-      fill: var(--background-color);
-    }
-
-    .pattern {
-      --width: calc(var(--cell-size) * var(--num-columns) + var(--gutter) * var(--num-columns) - var(--gutter));
-      --height: calc(var(--cell-size) * var(--num-rows) + var(--gutter) * var(--num-rows) - var(--gutter));
-      --transform-x: calc((100% - var(--width)) / 2);
-      --transform-y: calc((100% - var(--height)) / 2);
-      transform: translate(var(--transform-x), var(--transform-y));
-    }
-
-    .cell {
-      x: var(--cell-x);
-      y: var(--cell-y);
-      width: var(--cell-size);
-      height: var(--cell-size);
-    }
-
-    .cell-corner {
-      width: calc(var(--cell-size) / 2);
-      height: calc(var(--cell-size) / 2);
-    }
-
-    .filled .cell-corner {
-      fill: var(--cell-color);
-    }
-
-    .cell-corner-top-left {
-      x: var(--cell-x);
-      y: var(--cell-y);
-    }
-
-    .cell-corner-top-right {
-      x: calc(var(--cell-x) + var(--cell-size) / 2);
-      y: var(--cell-y);
-    }
-
-    .cell-corner-bottom-left {
-      x: var(--cell-x);
-      y: calc(var(--cell-y) + var(--cell-size) / 2);
-    }
-
-    .cell-corner-bottom-right {
-      x: calc(var(--cell-x) + var(--cell-size) / 2);
-      y: calc(var(--cell-y) + var(--cell-size) / 2);
-    }
-
-    .filled .cell {
-      fill: var(--cell-color);
-      rx: var(--cell-rounding-outer);
-    }
-
-    .edge {
-      fill: var(--cell-color);
-    }
-
-    .filled .edge-vertical {
-      x: calc(var(--cell-x) - var(--cell-size) * 0.05);
-      y: calc(var(--cell-y) + var(--cell-rounding-outer) * var(--connect-corners-factor));
-      width: 1px;
-      height: calc(var(--cell-size) - var(--cell-rounding-outer) * 2 * var(--connect-corners-factor));
-    }
-
-    .filled .edge-horizontal {
-      x: calc(var(--cell-x) + var(--cell-rounding-outer) * var(--connect-corners-factor));
-      y: calc(var(--cell-size) * 0.95 + var(--cell-y));
-      height: 1px;
-      width: calc(var(--cell-size) - var(--cell-rounding-outer) * 2 * var(--connect-corners-factor));
-    }
-
-    .empty .cell.cell-empty {
-      rx: 0;
-      fill: var(--cell-color);
-    }
-
-    .empty .cell.cell-empty-bg {
-      rx: var(--cell-rounding-inner);
-      fill: var(--background-color);
-    }
-
-    .empty .cell-corner {
-      fill: var(--cell-color);
-      rx: ${this.needsConnectedCorners() ? '0' : `var(--cell-rounding-outer)`};
-    }
-
-    .empty .edge-horizontal-top-left {
-      x: var(--cell-x);
-      y: calc(var(--cell-y) - var(--cell-size) * 0.05);
-      height: 1px;
-      width: calc(var(--cell-size) / 2);
-    }
-
-    .empty .edge-vertical-top-left {
-      x: calc(var(--cell-x) - var(--cell-size) * 0.05);
-      y: var(--cell-y);
-      width: 1px;
-      height: calc(var(--cell-size) / 2);
-    }
-
-    .empty .edge-horizontal-top-right {
-      x: calc(var(--cell-x) + var(--cell-size) / 2);
-      y: calc(var(--cell-y) - var(--cell-size) * 0.05);
-      height: 1px;
-      width: calc(var(--cell-size) / 2);
-    }
-
-    .empty .edge-vertical-top-right {
-      x: calc(var(--cell-x) + var(--cell-size) * 0.95);
-      y: var(--cell-y);
-      width: 1px;
-      height: calc(var(--cell-size) / 2);
-    }
-
-    .empty .edge-horizontal-bottom-right {
-      x: calc(var(--cell-x) + var(--cell-size) / 2);
-      y: calc(var(--cell-y) + var(--cell-size) * 0.95);
-      height: 1px;
-      width: calc(var(--cell-size) / 2);
-    }
-
-    .empty .edge-vertical-bottom-right {
-      x: calc(var(--cell-x) + var(--cell-size) * .95);
-      y: calc(var(--cell-y) + var(--cell-size) / 2);
-      width: 1px;
-      height: calc(var(--cell-size) / 2);
-    }
-
-    .empty .edge-horizontal-bottom-left {
-      x: var(--cell-x);
-      y: calc(var(--cell-y) + var(--cell-size) * .95);
-      height: 1px;
-      width: calc(var(--cell-size) / 2);
-    }
-
-    .empty .edge-vertical-bottom-left {
-      x: calc(var(--cell-x) - var(--cell-size) * 0.05);
-      y: calc(var(--cell-y) + var(--cell-size) / 2);
-      width: 1px;
-      height: calc(var(--cell-size) / 2);
-    }
+      --color-background: ${false ? 'url(#gradient-background)' : 'black'};
+      --color-cell-fill: ${false ? 'url(#gradient-fill)' : 'red'};
+      --color-cell-stroke: ${false ? 'url(#gradient-stroke)' : 'yellow'};
+      --stroke-width: ${this.config.strokeWidth}px;
+      --ptn-width: ${this.calculated.ptnWidth}px;
+      --ptn-height: ${this.calculated.ptnHeight}px;
+      }
+    
+      .background {
+        width: 100%;
+        height: 100%;
+        fill: var(--color-background);
+      }
+    
+      .pattern {
+        fill: var(--color-cell-fill);
+        stroke: var(--color-cell-stroke);
+        stroke-width: var(--stroke-width);
+        paint-order: stroke;
+    
+        --transform-x: calc((100% - var(--ptn-width) + var(--stroke-width)) / 2);
+        --transform-y: calc((100% - var(--ptn-height) + var(--stroke-width)) / 2);
+        transform: translate(var(--transform-x), var(--transform-y));
+      }
     `;
 
+    return this.formatCSS(css);
+  }
+
+  private formatCSS(css: string) {
     return css
       .replace(
         /^(.+)(\{[\s\S]+?\})/gm,
@@ -308,30 +190,238 @@ export class SVG {
     return els.join('');
   }
 
-  private getBackgroundWHString() {
+  private getCalculatedValues() {
     const { rows, columns } = this.config.inner.gridSize;
     const { cellSize } = this.config.inner;
     const { gutter, patternAreaRatio, strokeWidth } = this.config;
     const ptnWidth = cellSize * columns + gutter * (columns - 1) + strokeWidth;
     const ptnHeight = cellSize * rows + gutter * (rows - 1) + strokeWidth;
     const backgroundWH = Math.max(ptnWidth, ptnHeight) / patternAreaRatio;
-    return backgroundWH.toFixed(2);
+    const rOuter = (cellSize * this.config.cellRounding.outer) / 2;
+    const rInner = (cellSize * this.config.cellRounding.inner) / 2;
+    return {
+      ptnWidth,
+      ptnHeight,
+      backgroundWH,
+      cellRadius: { outer: rOuter, inner: rInner },
+    };
   }
 
   public buildFrom(cells: Iterable<Cell>) {
-    const backgroundWH = this.getBackgroundWHString();
+    const backgroundWH = this.calculated.backgroundWH.toFixed(2);
 
     const svgEls: string[] = [
       `<svg xmlns="http://www.w3.org/2000/svg" width="${backgroundWH}" height="${backgroundWH}" viewbox="0 0 ${backgroundWH} ${backgroundWH}">`,
       `<style>${this.getFormattedCSS()}</style>`,
-      '<rect class="background"/>',
-      `<g class="pattern">${this.getFormattedCellDivs(cells)}</g>`,
+      `<rect class="background" />`,
+      `<path class="pattern" d="${this.drawCompletePath(cells)}"/>`,
       '</svg>',
     ];
 
     const svg = svgEls.join('');
 
     this.string = svg;
+  }
+
+  drawCompletePath(cells: Iterable<Cell>) {
+    let pathData = '';
+    const roundingInner = this.config.cellRounding.inner;
+    const roundingOuter = this.config.cellRounding.outer;
+    const roundingsDiffer = this.config.strokeWidth
+      ? roundingInner >= roundingOuter
+      : roundingInner > roundingOuter;
+    const canDrawInnerCorner =
+      roundingInner && (roundingsDiffer || this.config.flow);
+    for (const cell of cells) {
+      let x = cell.col * (this.config.inner.cellSize + this.config.gutter);
+      let y = cell.row * (this.config.inner.cellSize + this.config.gutter);
+      if (cell.isFilled()) {
+        pathData += this.drawFilledCellPath({ cell, coords: { x, y } });
+      } else if (canDrawInnerCorner) {
+        pathData += this.drawInnerCornersPath({ cell, coords: { x, y } });
+      }
+    }
+
+    return pathData;
+  }
+
+  drawFilledCellPath(options: {
+    cell: Cell;
+    coords: { x: number; y: number };
+  }) {
+    let pathData = '';
+    const cell = options.cell;
+    const { x, y } = options.coords;
+    const cellSize = this.config.inner.cellSize;
+    const roundingOuter = this.config.cellRounding.outer;
+    const rxOuter = this.calculated.cellRadius.outer;
+    const flow = this.config.flow;
+    let hasLeftNb: boolean;
+    let hasTopNb: boolean;
+    let hasRightNb: boolean;
+    let hasBottomNb: boolean;
+    let hasTopLeftNb: boolean;
+    let hasTopRightNb: boolean;
+    let hasBottomLeftNb: boolean;
+    let hasBottomRightNb: boolean;
+    pathData += `M ${x} ${y + cellSize / 2} `;
+    if (roundingOuter < 1) {
+      pathData += `L ${x} ${y + rxOuter} `;
+    }
+    if (roundingOuter) {
+      if (
+        flow &&
+        ((hasLeftNb ??= cell.hasFilledNeighbor('LEFT')) ||
+          (hasTopNb ??= cell.hasFilledNeighbor('TOP')) ||
+          (hasTopLeftNb ??= cell.hasFilledNeighbor('TOP_LEFT')))
+      ) {
+        pathData += `L ${x} ${y} `;
+        pathData += `L ${x + rxOuter} ${y} `;
+      } else {
+        pathData += `A ${rxOuter} ${rxOuter} 0 0 1 ${x + rxOuter} ${y} `;
+      }
+    }
+    if (roundingOuter < 1) {
+      pathData += `L ${x + cellSize - rxOuter} ${y} `;
+    }
+    if (roundingOuter) {
+      if (
+        flow &&
+        ((hasRightNb ??= cell.hasFilledNeighbor('RIGHT')) ||
+          (hasTopNb ??= cell.hasFilledNeighbor('TOP')) ||
+          (hasTopRightNb ??= cell.hasFilledNeighbor('TOP_RIGHT')))
+      ) {
+        pathData += `L ${x + cellSize} ${y} `;
+        pathData += `L ${x + cellSize} ${y + rxOuter} `;
+      } else {
+        pathData += `A ${rxOuter} ${rxOuter} 0 0 1 ${x + cellSize} ${
+          y + rxOuter
+        } `;
+      }
+    }
+    if (roundingOuter < 1) {
+      pathData += `L ${x + cellSize} ${y + cellSize - rxOuter} `;
+    }
+    if (roundingOuter) {
+      if (
+        flow &&
+        ((hasRightNb ??= cell.hasFilledNeighbor('RIGHT')) ||
+          (hasBottomNb ??= cell.hasFilledNeighbor('BOTTOM')) ||
+          (hasBottomRightNb ??= cell.hasFilledNeighbor('BOTTOM_RIGHT')))
+      ) {
+        pathData += `L ${x + cellSize} ${y + cellSize} `;
+        pathData += `L ${x + cellSize - rxOuter} ${y + cellSize} `;
+      } else {
+        pathData += `A ${rxOuter} ${rxOuter} 0 0 1 ${x + cellSize - rxOuter} ${
+          y + cellSize
+        } `;
+      }
+    }
+    if (roundingOuter < 1) {
+      pathData += `L ${x + rxOuter} ${y + cellSize} `;
+    }
+    if (roundingOuter) {
+      if (
+        flow &&
+        ((hasLeftNb ??= cell.hasFilledNeighbor('LEFT')) ||
+          (hasBottomNb ??= cell.hasFilledNeighbor('BOTTOM')) ||
+          (hasBottomLeftNb ??= cell.hasFilledNeighbor('BOTTOM_LEFT')))
+      ) {
+        pathData += `L ${x} ${y + cellSize} `;
+        pathData += `L ${x} ${y + cellSize - rxOuter} `;
+      } else {
+        pathData += `A ${rxOuter} ${rxOuter} 0 0 1 ${x} ${
+          y + cellSize - rxOuter
+        } `;
+      }
+    }
+    if (roundingOuter < 1) {
+      pathData += `L ${x} ${y + cellSize / 2} `;
+    }
+    pathData += 'Z ';
+    return pathData;
+  }
+
+  drawInnerCornersPath(options: {
+    cell: Cell;
+    coords: { x: number; y: number };
+  }) {
+    let pathData = '';
+    const cell = options.cell;
+    const { x, y } = options.coords;
+    const cellSize = this.config.inner.cellSize;
+    const rxInner = this.calculated.cellRadius.inner;
+    const rxOuter = this.calculated.cellRadius.outer;
+    const flow = this.config.flow;
+    const hasTopNb = cell.hasFilledNeighbor('TOP');
+    const hasBottomNb = cell.hasFilledNeighbor('BOTTOM');
+    const hasLeftNb = cell.hasFilledNeighbor('LEFT');
+    const hasRightNb = cell.hasFilledNeighbor('RIGHT');
+    if (hasTopNb && hasLeftNb) {
+      pathData += `M ${x} ${y + rxInner} `;
+      pathData += `A ${rxInner} ${rxInner} 0 0 1 ${x + rxInner} ${y} `;
+      pathData += `L ${x + rxOuter} ${y} `;
+      if (flow) {
+        pathData += `L ${x} ${y} `;
+        pathData += `L ${x} ${y + rxOuter} `;
+      } else if (rxOuter) {
+        pathData += `A ${rxOuter} ${rxOuter} 0 0 0 ${x} ${y + rxOuter} `;
+      }
+      pathData += `L ${x} ${y + rxInner} `;
+      pathData += 'Z ';
+    }
+    if (hasTopNb && hasRightNb) {
+      pathData += `M ${x + cellSize - rxInner} ${y} `;
+      pathData += `A ${rxInner} ${rxInner} 0 0 1 ${x + cellSize} ${
+        y + rxInner
+      } `;
+      pathData += `L ${x + cellSize} ${y + rxOuter} `;
+      if (flow) {
+        pathData += `L ${x + cellSize} ${y} `;
+        pathData += `L ${x + cellSize - rxOuter} ${y} `;
+      } else if (rxOuter) {
+        pathData += `A ${rxOuter} ${rxOuter} 0 0 0 ${
+          x + cellSize - rxOuter
+        } ${y} `;
+      }
+      pathData += `L ${x + cellSize - rxInner} ${y} `;
+      pathData += 'Z ';
+    }
+    if (hasBottomNb && hasRightNb) {
+      pathData += `M ${x + cellSize} ${y + cellSize - rxInner} `;
+      pathData += `A ${rxInner} ${rxInner} 0 0 1 ${x + cellSize - rxInner} ${
+        y + cellSize
+      } `;
+      pathData += `L ${x + cellSize - rxOuter} ${y + cellSize} `;
+      if (flow) {
+        pathData += `L ${x + cellSize} ${y + cellSize} `;
+        pathData += `L ${x + cellSize} ${y + cellSize - rxOuter} `;
+      } else if (rxOuter) {
+        pathData += `A ${rxOuter} ${rxOuter} 0 0 0 ${x + cellSize} ${
+          y + cellSize - rxOuter
+        } `;
+      }
+      pathData += `L ${x + cellSize} ${y + cellSize - rxInner} `;
+      pathData += 'Z ';
+    }
+    if (hasBottomNb && hasLeftNb) {
+      pathData += `M ${x + rxInner} ${y + cellSize} `;
+      pathData += `A ${rxInner} ${rxInner} 0 0 1 ${x} ${
+        y + cellSize - rxInner
+      } `;
+      pathData += `L ${x} ${y + cellSize - rxOuter} `;
+      if (flow) {
+        pathData += `L ${x} ${y + cellSize} `;
+        pathData += `L ${x + rxOuter} ${y + cellSize} `;
+      } else if (rxOuter) {
+        pathData += `A ${rxOuter} ${rxOuter} 0 0 0 ${x + rxOuter} ${
+          y + cellSize
+        } `;
+      }
+      pathData += `L ${x + rxInner} ${y + cellSize} `;
+      pathData += 'Z ';
+    }
+    return pathData;
   }
 
   private needsSmoothing() {
@@ -362,9 +452,7 @@ export class SVG {
   }
 
   private needsConnectedCorners() {
-    return (
-      this.config.cellRounding.outer > 0 && this.config.connectCorners === true
-    );
+    return this.config.cellRounding.outer > 0 && this.config.flow === true;
   }
 
   private getFormattedEdgesAndCorners(cell: Cell): string {

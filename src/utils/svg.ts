@@ -322,7 +322,7 @@ export class SVG {
     const backgroundWH = this.getBackgroundWHString();
 
     const svgEls: string[] = [
-      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${backgroundWH} ${backgroundWH}">`,
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${backgroundWH}" height="${backgroundWH}" viewbox="0 0 ${backgroundWH} ${backgroundWH}">`,
       `<style>${this.getFormattedCSS()}</style>`,
       '<rect class="background"/>',
       `<g class="pattern">${this.getFormattedCellDivs(cells)}</g>`,

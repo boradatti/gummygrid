@@ -14,7 +14,6 @@ type SVGInnerConfig = {
   gutter: number;
   cellRounding: { inner: number; outer: number };
   inner: {
-    cells: Iterable<Cell>;
     cellSize: number;
     gridSize: Exclude<GridConfig['size'], number>;
     cellColorPicker: (colors: string[]) => string;
@@ -291,14 +290,10 @@ export class SVG {
     return els.join('');
   }
 
-  private get cells() {
-    return this.config.inner.cells;
-  }
-
-  private getFormattedCellDivs(): string {
+  private getFormattedCellDivs(cells: Iterable<Cell>): string {
     const els: string[] = [];
 
-    for (const cell of this.cells) {
+    for (const cell of cells) {
       const { x, y } = this.getSVGCellCoordinates(cell);
       if (cell.isFilled()) {
         const filledDiv = this.getFilledCellDiv(cell, { x, y });
@@ -322,14 +317,14 @@ export class SVG {
     return backgroundWH.toFixed(2);
   }
 
-  public build() {
+  public buildFrom(cells: Iterable<Cell>) {
     const backgroundWH = this.getBackgroundWHString();
 
     const svgEls: string[] = [
       `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${backgroundWH} ${backgroundWH}">`,
       `<style>${this.getFormattedCSS()}</style>`,
       '<rect class="background"/>',
-      `<g class="pattern">${this.getFormattedCellDivs()}</g>`,
+      `<g class="pattern">${this.getFormattedCellDivs(cells)}</g>`,
       '</svg>',
     ];
 

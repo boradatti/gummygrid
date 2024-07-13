@@ -73,7 +73,7 @@ export class GummyGrid {
   public buildFrom(value: string) {
     this.rand.setSeed(value);
     this.grid.build();
-    this.svg.build();
+    this.svg.buildFrom(this.grid.iterateCells());
   }
 
   private initializeRandomizer() {
@@ -106,7 +106,6 @@ export class GummyGrid {
             this.config.randomizer.bias!.cellColorWeights
           );
         },
-        cells: this.grid.iterateCells(),
         cellSize: 10,
         gridSize: this.grid.size,
       },

@@ -283,5 +283,12 @@ export class Grid {
         }
       }
     }
+
+  public getMatrix() {
+    return this.grid.map((r) => r.map((c) => +c.isFilled()));
+  }
+
+  public logAsMatrix() {
+    return console.log(this.getMatrix());
   }
 }

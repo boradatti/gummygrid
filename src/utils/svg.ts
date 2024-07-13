@@ -13,6 +13,7 @@ type SVGInnerConfig = {
   connectCorners: boolean;
   gutter: number;
   cellRounding: { inner: number; outer: number };
+  strokeWidth: number;
   inner: {
     cellSize: number;
     gridSize: Exclude<GridConfig['size'], number>;
@@ -310,9 +311,9 @@ export class SVG {
   private getBackgroundWHString() {
     const { rows, columns } = this.config.inner.gridSize;
     const { cellSize } = this.config.inner;
-    const { gutter, patternAreaRatio } = this.config;
-    const ptnWidth = cellSize * columns + gutter * (columns - 1);
-    const ptnHeight = cellSize * rows + gutter * (rows - 1);
+    const { gutter, patternAreaRatio, strokeWidth } = this.config;
+    const ptnWidth = cellSize * columns + gutter * (columns - 1) + strokeWidth;
+    const ptnHeight = cellSize * rows + gutter * (rows - 1) + strokeWidth;
     const backgroundWH = Math.max(ptnWidth, ptnHeight) / patternAreaRatio;
     return backgroundWH.toFixed(2);
   }

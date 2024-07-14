@@ -1,10 +1,13 @@
 import type { GridConfig } from './grid';
 import type { Cell, CellCoordinates } from './cell';
+import { toTrainCase } from './utils';
 
 type SVGInnerConfig = {
-  backgroundColor: string;
   patternAreaRatio: number;
-  cellColors: string[];
+  backgroundColors: SVGColor[];
+  cellFillColors: SVGColor[];
+  cellStrokeColors: SVGColor[];
+  lockColors: ColorCategory[];
   flow: boolean;
   gutter: number;
   cellRounding: { inner: number; outer: number };
@@ -12,7 +15,10 @@ type SVGInnerConfig = {
   inner: {
     cellSize: number;
     gridSize: Exclude<GridConfig['size'], number>;
-    cellColorPicker: (colors: string[]) => string;
+    colorIdxPicker: (options: {
+      category: ColorCategory;
+      colors: SVGColor[];
+    }) => number;
   };
 };
 
@@ -31,33 +37,90 @@ export class SVG {
   private readonly calculated: Readonly<SVGCalculatedValues>;
 
   public constructor(config: SVGInnerConfig) {
-    this.validateConfig(config);
     this.config = config;
+    this.validateConfig();
     this.calculated = this.getCalculatedValues();
   }
 
-  private validateConfig(config: SVGInnerConfig) {
-    const { inner, outer } = config.cellRounding;
+  private validateConfig() {
+    this.validateCellRounding();
+    this.validateColorArrays();
+    this.validateLockedColorArrays();
+  }
+
+  private validateCellRounding() {
+    const { inner, outer } = this.config.cellRounding;
     if (inner < 0 || inner > 1 || outer < 0 || outer > 1)
       throw new Error(
         'Inner and outer rounding should both be numbers between 0 and 1'
       );
   }
 
-  private pickCellColor() {
-    return this.config.inner.cellColorPicker(this.config.cellColors);
+  private validateColorArrays() {
+    const { backgroundColors, cellFillColors, cellStrokeColors, strokeWidth } =
+      this.config;
+    if (backgroundColors.length == 0 || cellFillColors.length == 0)
+      throw new Error(
+        'cellFillColors and backgorundColors must be of length greater than 0'
+      );
+    if (strokeWidth > 0 && cellStrokeColors.length == 0)
+      throw new Error('cellStrokeColors must be of length greater than 0');
+    // todo: ensure
   }
 
-  private getFormattedCSS(): string {
-    // todo: implement color logic
+  private validateLockedColorArrays() {
+    let lockedLength: number;
+    const { lockColors } = this.config;
+    for (const colorCategory of lockColors) {
+      const colors = this.getColorsFromCategory(colorCategory);
+      lockedLength ??= colors.length;
+      if (colors.length != lockedLength)
+        throw new Error(
+          `All the color arrays specified in lockColors (${lockColors.join(
+            ', '
+          )}) must be of equal length`
+        );
+    }
+  }
+
+  private pickColorIdx(category: ColorCategory) {
+    const colors = this.getColorsFromCategory(category);
+    return this.config.inner.colorIdxPicker({
+      category,
+      colors,
+    });
+  }
+
+  private getColorsFromCategory(category: ColorCategory) {
+    return this.config[`${category}Colors`];
+  }
+
+  private isGradientColor(color: SVGColor): color is SVGGradientColor {
+    return typeof color !== 'string';
+  }
+
+  private getFormattedCSS(colors: ColorsByCategory): string {
+    // const
     const css = `
-    :root {
-      --color-background: ${false ? 'url(#gradient-background)' : 'black'};
-      --color-cell-fill: ${false ? 'url(#gradient-fill)' : 'red'};
-      --color-cell-stroke: ${false ? 'url(#gradient-stroke)' : 'yellow'};
-      --stroke-width: ${this.config.strokeWidth}px;
-      --ptn-width: ${this.calculated.ptnWidth}px;
-      --ptn-height: ${this.calculated.ptnHeight}px;
+      :root {
+        --color-background: ${
+          this.isGradientColor(colors.background)
+            ? 'url(#gradient-background)'
+            : colors.background
+        };
+        --color-cell-fill: ${
+          this.isGradientColor(colors.cellFill)
+            ? 'url(#gradient-cell-fill)'
+            : colors.cellFill
+        };
+        --color-cell-stroke: ${
+          this.isGradientColor(colors.cellStroke)
+            ? 'url(#gradient-cell-stroke)'
+            : colors.cellStroke
+        };
+        --stroke-width: ${this.config.strokeWidth}px;
+        --ptn-width: ${this.calculated.ptnWidth}px;
+        --ptn-height: ${this.calculated.ptnHeight}px;
       }
     
       .background {
@@ -71,6 +134,7 @@ export class SVG {
         stroke: var(--color-cell-stroke);
         stroke-width: var(--stroke-width);
         paint-order: stroke;
+        filter: drop-shadow(0px 0px 2px #52242d);
         --transform-x: calc((100% - var(--ptn-width) + var(--stroke-width)) / 2);
         --transform-y: calc((100% - var(--ptn-height) + var(--stroke-width)) / 2);
         transform: translate(var(--transform-x), var(--transform-y));
@@ -88,6 +152,7 @@ export class SVG {
           definition.trim() + declarations.replace(/(\n|^ +)/gm, '')
       )
       .split(/\n+/)
+      .map((line) => line.trim())
       .join('')
       .trim();
   }
@@ -112,13 +177,70 @@ export class SVG {
     };
   }
 
+  private isLockedColor(category: ColorCategory) {
+    return this.config.lockColors.includes(category);
+  }
+
+  private getAllColors(): ColorsByCategory {
+    let res = {} as any;
+
+    let lockedIdx: number;
+    if (this.config.lockColors.length > 0) {
+      const lockedColor = this.config.lockColors[0]!;
+      lockedIdx = this.pickColorIdx(lockedColor);
+    }
+
+    for (const colorCategory of COLOR_CATEGORIES) {
+      const colors = this.getColorsFromCategory(colorCategory);
+      if (this.isLockedColor(colorCategory)) {
+        res[colorCategory] = colors[lockedIdx!];
+      } else {
+        res[colorCategory] = colors[this.pickColorIdx(colorCategory)];
+      }
+    }
+
+    return res as ColorsByCategory;
+  }
+
+  private getGradientSVGTags(colors: ColorsByCategory): GradientSVGTagMap {
+    const tags: GradientSVGTagMap = {
+      background: '',
+      cellFill: '',
+      cellStroke: '',
+    };
+
+    for (const [category, color] of Object.entries(colors)) {
+      if (!this.isGradientColor(color)) continue;
+      const { type, attrs, stops } = color;
+      // @ts-ignore
+      tags[category] = this.formatGradientTag({
+        tag: type,
+        attrs,
+        stops,
+        // @ts-ignore
+        category,
+      });
+    }
+
+    return tags;
+  }
+
   public buildFrom(cells: Iterable<Cell>) {
     const backgroundWH = this.calculated.backgroundWH.toFixed(2);
 
+    const colors = this.getAllColors();
+    console.log('👀👀👀');
+    console.log(colors);
+
+    const gradientTags = this.getGradientSVGTags(colors);
+
     const svgEls: string[] = [
       `<svg xmlns="http://www.w3.org/2000/svg" width="${backgroundWH}" height="${backgroundWH}" viewbox="0 0 ${backgroundWH} ${backgroundWH}">`,
-      `<style>${this.getFormattedCSS()}</style>`,
+      `<style>${this.getFormattedCSS(colors)}</style>`,
       `<rect class="background" />`,
+      gradientTags.background,
+      gradientTags.cellFill,
+      gradientTags.cellStroke,
       `<path class="pattern" d="${this.drawCompletePath(cells)}"/>`,
       '</svg>',
     ];
@@ -350,4 +472,79 @@ export class SVG {
       y: coord.row * (this.config.inner.cellSize + this.config.gutter),
     };
   }
+
+  private formatGradientTag(options: {
+    tag: SVGGradientTag;
+    attrs: Record<any, any>;
+    stops: Array<Stop>;
+    category: ColorCategory;
+  }): string {
+    const { tag, attrs, stops, category } = options;
+    let svg = `<${tag} id="gradient-${toTrainCase(category)}" `;
+    for (const [key, value] of Object.entries(attrs))
+      svg += `${key}="${value}" `;
+    svg += '>';
+    for (const stop of stops) {
+      svg += '<stop ';
+      for (const [key, value] of Object.entries(stop))
+        svg += `${toTrainCase(key)}="${value}" `;
+      svg += '/>';
+    }
+    return svg + `</${tag}>`;
+  }
 }
+
+type SVGGradientTag = 'radialGradient' | 'linearGradient';
+
+type SVGLinearGradientAttributes = {
+  x1?: string;
+  x2?: string;
+  y1?: string;
+  y2?: string;
+  gradientUnits?: 'userSpaceOnUse' | 'objectBoundingBox';
+  gradientTransform?: string;
+  spreadMethod?: 'pad' | 'reflect' | 'repeat';
+  href?: string;
+};
+
+type SVGRadialGradientAttributes = {
+  cx?: string;
+  cy?: string;
+  r?: string;
+  fx?: string;
+  fy?: string;
+  fr?: string | 'userSpaceOnUse' | 'objectBoundingBox';
+  transform?: string;
+  href?: string;
+  r2: string;
+  spreadMethod?: 'pad' | 'reflect' | 'repeat';
+};
+
+type SVGColor =
+  | string
+  | {
+      type: 'linearGradient';
+      attrs: SVGLinearGradientAttributes;
+      stops: Array<Stop>;
+    }
+  | {
+      type: 'radialGradient';
+      attrs: SVGRadialGradientAttributes;
+      stops: Array<Stop>;
+    };
+
+type SVGGradientColor = Exclude<SVGColor, string>;
+
+const COLOR_CATEGORIES = ['background', 'cellFill', 'cellStroke'] as const;
+
+export type ColorCategory = (typeof COLOR_CATEGORIES)[number];
+
+type ColorsByCategory = { [K in ColorCategory]: SVGColor };
+
+type Stop = {
+  offset: number | `${number}%`;
+  stopColor: string;
+  stopOpacity: number;
+};
+
+type GradientSVGTagMap = Record<ColorCategory, string>;

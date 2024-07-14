@@ -1,14 +1,14 @@
 import { Grid } from '@/utils/grid';
 import type { GridConfig } from '@/utils/grid';
 import { SVG } from '@/utils/svg';
-import type { SVGConfig } from '@/utils/svg';
+import type { ColorCategory, SVGConfig } from '@/utils/svg';
 import { Randomizer } from '@/utils/randomizer';
 
 type RandomizerConfig = {
   salt: number;
   bias: {
     cellFillProbability: number;
-    cellColorWeights?: number[];
+    colorWeights?: Record<ColorCategory, number[]>; // todo: ensure correct length
   };
 };
 
@@ -23,7 +23,7 @@ const defaultAvatarGeneratorConfig: AvatarGeneratorConfig = {
     salt: 0,
     bias: {
       cellFillProbability: 0.5,
-      cellColorWeights: undefined,
+      colorWeights: undefined,
     },
   },
   grid: {
@@ -38,9 +38,11 @@ const defaultAvatarGeneratorConfig: AvatarGeneratorConfig = {
     verticalSymmetry: false,
   },
   svg: {
-    backgroundColor: 'white',
     patternAreaRatio: 0.75,
-    cellColors: ['red', 'blue', 'green', 'yellow'],
+    backgroundColors: ['white'],
+    cellFillColors: ['red', 'blue', 'green', 'yellow'],
+    cellStrokeColors: [],
+    lockColors: [],
     cellRounding: {
       outer: 0,
       inner: 0,
@@ -101,11 +103,9 @@ export class GummyGrid {
     return new SVG({
       ...this.config.svg,
       inner: {
-        cellColorPicker: (colors) => {
-          return this.rand.choice(
-            colors,
-            this.config.randomizer.bias!.cellColorWeights
-          );
+        colorIdxPicker: ({ category, colors }) => {
+          const weights = this.config.randomizer.bias!.colorWeights?.[category];
+          return this.rand.getChoiceIndex(colors, weights);
         },
         cellSize: 10,
         gridSize: this.grid.size,

@@ -35,7 +35,21 @@ export class Randomizer {
     return arr[this.number(0, arr.length - 1)]!;
   }
 
+  getChoiceIndex<T>(arr: T[], weights?: number[]): number {
+    if (arr.length == 0) throw new Error('Cannot choose from an empty array');
+    if (weights) return this.choiceWeightedIndex(arr, weights).idx;
+    return this.number(0, arr.length - 1);
+  }
+
   private choiceWeighted<T>(arr: T[], weights: number[]): T {
+    const { arr: filteredArr, idx } = this.choiceWeightedIndex(arr, weights);
+    return filteredArr[idx]!;
+  }
+
+  private choiceWeightedIndex<T>(
+    arr: T[],
+    weights: number[]
+  ): { idx: number; arr: T[] } {
     if (arr.length !== weights.length)
       throw new Error(
         `Length of \`weights\` must equal that of \`arr\` (${arr.length})`
@@ -56,7 +70,7 @@ export class Randomizer {
     const randomWeight = this.number(1, totalWeight);
     const idx = binaryFindIndex(cumulativeWeights, randomWeight);
 
-    return filteredArr[idx]!;
+    return { idx, arr: filteredArr };
   }
 
   private setHash(): void {

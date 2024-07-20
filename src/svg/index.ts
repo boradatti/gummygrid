@@ -1,5 +1,8 @@
+let fs: typeof import('fs');
+
 import type Cell from '@/grid/cell';
 import type { CellCoordinates } from '@/grid/cell/types';
+import { SVG_DATA_PREFIX } from './constants';
 import {
   ColorCategory,
   ColorsByCategory,
@@ -52,10 +55,44 @@ class SVG {
   toURLEncodedString(options: { withPrefix: boolean } = { withPrefix: false }) {
     const encodedString = encodeURIComponent(this.string);
     if (options.withPrefix) {
-      return `data:image/svg+xml;charset=utf-8,${encodedString}`;
+      return `data:${SVG_DATA_PREFIX},${encodedString}`;
     } else {
       return encodedString;
     }
+  }
+
+  toBlob() {
+    return new Blob([this.toString()], { type: SVG_DATA_PREFIX });
+  }
+
+  async toBuffer() {
+    return Buffer.from(this.toString());
+  }
+
+  async writeFile(filename: string) {
+    if (typeof window !== 'undefined') {
+      this.writeFileInBrowser(filename);
+    } else if (typeof require !== 'undefined') {
+      await this.writeFileInNode(filename);
+    }
+  }
+
+  private async writeFileInNode(filename: string) {
+    fs ??= await import('fs');
+    fs.writeFileSync(`${filename.replace(/\.svg$/, '')}.svg`, this.toString());
+  }
+
+  private writeFileInBrowser(filename: string) {
+    const blob = this.toBlob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = `${filename.replace(/\.svg$/, '')}.svg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   private validateConfig() {

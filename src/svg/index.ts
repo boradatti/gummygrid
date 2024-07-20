@@ -65,6 +65,14 @@ class SVG {
     return new Blob([this.toString()], { type: SVG_DATA_PREFIX });
   }
 
+  getLockedColors(): ColorCategory[] {
+    if (this.config.lockColors == 'all') {
+      return this.colorCategories;
+    } else {
+      return this.config.lockColors;
+    }
+  }
+
   async toBuffer() {
     return Buffer.from(this.toString());
   }
@@ -148,14 +156,6 @@ class SVG {
             ', '
           )}) must be be specified and have equal length`
         );
-    }
-  }
-
-  getLockedColors(): ColorCategory[] {
-    if (this.config.lockColors == 'all') {
-      return this.colorCategories;
-    } else {
-      return this.config.lockColors;
     }
   }
 
@@ -337,7 +337,7 @@ class SVG {
     return tags;
   }
 
-  drawCompletePath(cells: Iterable<Cell>) {
+  private drawCompletePath(cells: Iterable<Cell>) {
     let pathData = '';
 
     for (const cell of cells) {
@@ -353,7 +353,7 @@ class SVG {
     return pathData;
   }
 
-  canDrawInnerCorner() {
+  private canDrawInnerCorner() {
     const roundingInner = this.config.cellRounding.inner;
     const roundingOuter = this.config.cellRounding.outer;
     const roundingsDiffer = this.config.strokeWidth
@@ -362,7 +362,7 @@ class SVG {
     return roundingInner && (roundingsDiffer || this.config.flow);
   }
 
-  drawFilledCellPath(options: {
+  private drawFilledCellPath(options: {
     cell: Cell;
     coords: { x: number; y: number };
   }) {
@@ -452,7 +452,7 @@ class SVG {
     return pathData;
   }
 
-  drawInnerCornersPath(options: {
+  private drawInnerCornersPath(options: {
     cell: Cell;
     coords: { x: number; y: number };
   }) {

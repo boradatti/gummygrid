@@ -115,7 +115,7 @@ export class SVG {
     }
   }
 
-  private getLockedColors(): ColorCategory[] {
+  getLockedColors(): ColorCategory[] {
     if (this.config.lockColors == 'all') {
       return this.colorCategories;
     } else {

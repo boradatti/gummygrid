@@ -90,6 +90,7 @@ export class GummyGrid {
     this.rand = this.initializeRandomizer();
     this.grid = this.initializeGrid();
     this.svg = this.initializeSVG();
+    this.connectLockedColorWeights();
   }
 
   public buildFrom(value: string) {
@@ -140,6 +141,21 @@ export class GummyGrid {
         gridSize: this.grid.size,
       },
     });
+  }
+
+  private connectLockedColorWeights() {
+    const { colorWeights } = this.config.randomizer.bias;
+    let weights;
+    for (const colorCategory of this.svg.getLockedColors()) {
+      if (colorCategory in colorWeights) {
+        weights = colorWeights[colorCategory]!;
+        break;
+      }
+    }
+    if (!weights) return;
+    for (const colorCategory of this.svg.getLockedColors()) {
+      colorWeights[colorCategory] = weights!;
+    }
   }
 }
 

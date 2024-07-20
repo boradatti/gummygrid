@@ -4,3 +4,12 @@ export function toTrainCase(camelCaseString: string) {
     (_, a, b) => `${a}-${b.toLowerCase()}`
   );
 }
+
+export function isEmptyObject(obj: Record<any, any>) {
+  for (const prop in obj) {
+    if (Object.hasOwn(obj, prop)) {
+      return false;
+    }
+  }
+  return true;
+}

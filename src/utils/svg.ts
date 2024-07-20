@@ -1,17 +1,34 @@
 import type { GridConfig } from './grid';
 import type { Cell, CellCoordinates } from './cell';
-import { toTrainCase } from './utils';
+import { isEmptyObject, toTrainCase } from './utils';
 
 type SVGInnerConfig = {
   patternAreaRatio: number;
-  backgroundColors: SVGColor[];
-  cellFillColors: SVGColor[];
-  cellStrokeColors: SVGColor[];
-  lockColors: ColorCategory[];
+  colors: {
+    background: SVGColor[];
+    cellFill: SVGColor[];
+    cellStroke?: SVGColor[];
+    dropShadow?: string[];
+  };
+  lockColors: ColorCategory[] | 'all';
   flow: boolean;
   gutter: number;
   cellRounding: { inner: number; outer: number };
   strokeWidth: number;
+  paintOrder: 'stroke' | 'normal';
+  strokeLineJoin: 'miter' | 'miter-clip' | 'round' | 'bevel' | 'arcs';
+  filters: {
+    blur?: string;
+    brightness?: string;
+    contrast?: string;
+    dropShadow?: [string, string, string];
+    grayscale?: string;
+    hueRotate?: string;
+    invert?: string;
+    opacity?: string;
+    saturate?: string;
+    sepia?: string;
+  };
   inner: {
     cellSize: number;
     gridSize: Exclude<GridConfig['size'], number>;
@@ -57,20 +74,32 @@ export class SVG {
   }
 
   private validateColorArrays() {
-    const { backgroundColors, cellFillColors, cellStrokeColors, strokeWidth } =
-      this.config;
-    if (backgroundColors.length == 0 || cellFillColors.length == 0)
+    const { colors, strokeWidth } = this.config;
+    if (colors.background.length == 0 || colors.cellFill.length == 0)
       throw new Error(
-        'cellFillColors and backgorundColors must be of length greater than 0'
+        'colors.cellFill and colors.background must be of length greater than 0'
       );
-    if (strokeWidth > 0 && cellStrokeColors.length == 0)
-      throw new Error('cellStrokeColors must be of length greater than 0');
-    // todo: ensure
+    if (strokeWidth > 0 && colors.cellStroke?.length == 0)
+      throw new Error(
+        "colors.cellStroke must be of length greater than 0, or strokeWidth shouldn't be specified"
+      );
+    if ('dropShadow' in this.config.filters && colors.dropShadow?.length == 0) {
+      throw new Error(
+        "colors.dropShadow must be of length greater than 0, or filters.dropShadow shouldn't be specified"
+      );
+    } else if (
+      colors.dropShadow?.length &&
+      !('dropShadow' in this.config.filters)
+    ) {
+      throw new Error(
+        "filers.dropShadow must be specified, or colors.dropShadow shouldn't be specified"
+      );
+    }
   }
 
   private validateLockedColorArrays() {
     let lockedLength: number;
-    const { lockColors } = this.config;
+    const lockColors = this.getLockedColors();
     for (const colorCategory of lockColors) {
       const colors = this.getColorsFromCategory(colorCategory);
       lockedLength ??= colors.length;
@@ -78,13 +107,22 @@ export class SVG {
         throw new Error(
           `All the color arrays specified in lockColors (${lockColors.join(
             ', '
-          )}) must be of equal length`
+          )}) must be be specified and have equal length`
         );
+    }
+  }
+
+  private getLockedColors(): ColorCategory[] {
+    if (this.config.lockColors == 'all') {
+      return this.colorCategories;
+    } else {
+      return this.config.lockColors;
     }
   }
 
   private pickColorIdx(category: ColorCategory) {
     const colors = this.getColorsFromCategory(category);
+    console.log({ colors });
     return this.config.inner.colorIdxPicker({
       category,
       colors,
@@ -92,15 +130,20 @@ export class SVG {
   }
 
   private getColorsFromCategory(category: ColorCategory) {
-    return this.config[`${category}Colors`];
+    return this.config.colors[category] ?? [];
+  }
+
+  private hasColorsInCategory(category: ColorCategory) {
+    return this.getColorsFromCategory(category).length > 0;
   }
 
   private isGradientColor(color: SVGColor): color is SVGGradientColor {
     return typeof color !== 'string';
   }
 
-  private getFormattedCSS(colors: ColorsByCategory): string {
-    // const
+  private formatCSS(colors: ColorsByCategory): string {
+    console.log('📞 getFormattedCSS');
+    console.log({ colors });
     const css = `
       :root {
         --color-background: ${
@@ -118,6 +161,7 @@ export class SVG {
             ? 'url(#gradient-cell-stroke)'
             : colors.cellStroke
         };
+        ${this.formatCSSDropShadow(colors.dropShadow as string)}
         --stroke-width: ${this.config.strokeWidth}px;
         --ptn-width: ${this.calculated.ptnWidth}px;
         --ptn-height: ${this.calculated.ptnHeight}px;
@@ -133,18 +177,21 @@ export class SVG {
         fill: var(--color-cell-fill);
         stroke: var(--color-cell-stroke);
         stroke-width: var(--stroke-width);
-        paint-order: stroke;
-        filter: drop-shadow(0px 0px 2px #52242d);
+        stroke-linejoin: ${this.config.strokeLineJoin};
+        paint-order: ${this.config.paintOrder};
+        ${this.formatCSSFiltersDeclaration()}
         --transform-x: calc((100% - var(--ptn-width) + var(--stroke-width)) / 2);
         --transform-y: calc((100% - var(--ptn-height) + var(--stroke-width)) / 2);
         transform: translate(var(--transform-x), var(--transform-y));
       }
     `;
 
-    return this.formatCSS(css);
+    console.log('🧐', this.formatCSSFiltersDeclaration());
+
+    return this.compressCSS(css);
   }
 
-  private formatCSS(css: string) {
+  private compressCSS(css: string) {
     return css
       .replace(
         /^(.+)(\{[\s\S]+?\})/gm,
@@ -155,6 +202,32 @@ export class SVG {
       .map((line) => line.trim())
       .join('')
       .trim();
+  }
+
+  private formatCSSDropShadow(dropShadowColor: string) {
+    console.log('📞 formatCSSDropShadow');
+    console.log({ dropShadowColor });
+    if (!dropShadowColor) return ''; // todo: revise
+    return `--color-cell-drop-shadow: ${dropShadowColor};`;
+  }
+
+  private formatCSSFiltersDeclaration() {
+    if (!this.hasFilters()) return '';
+    const values = [];
+    for (const [key, value] of Object.entries(this.config.filters)) {
+      const func = toTrainCase(key);
+      if (key == 'dropShadow') {
+        const v = [...value, 'var(--color-cell-drop-shadow)'].join(' ');
+        values.push(`${func}(${v})`);
+      } else {
+        values.push(`${func}(${value})`);
+      }
+    }
+    return `filter: ${values.join(' ')};`;
+  }
+
+  private hasFilters() {
+    return !isEmptyObject(this.config.filters);
   }
 
   private getCalculatedValues() {
@@ -168,6 +241,7 @@ export class SVG {
 
     const rOuter = (cellSize * this.config.cellRounding.outer) / 2;
     const rInner = (cellSize * this.config.cellRounding.inner) / 2;
+    console.log({ rOuter, rInner });
 
     return {
       ptnWidth,
@@ -178,24 +252,30 @@ export class SVG {
   }
 
   private isLockedColor(category: ColorCategory) {
-    return this.config.lockColors.includes(category);
+    return (
+      this.config.lockColors == 'all' ||
+      this.config.lockColors.includes(category)
+    );
   }
 
   private getAllColors(): ColorsByCategory {
     let res = {} as any;
 
+    const lockedColors = this.getLockedColors();
+    console.log({ lockedColors });
     let lockedIdx: number;
-    if (this.config.lockColors.length > 0) {
-      const lockedColor = this.config.lockColors[0]!;
+    if (lockedColors.length) {
+      const lockedColor = lockedColors[0]!;
       lockedIdx = this.pickColorIdx(lockedColor);
     }
 
-    for (const colorCategory of COLOR_CATEGORIES) {
-      const colors = this.getColorsFromCategory(colorCategory);
-      if (this.isLockedColor(colorCategory)) {
-        res[colorCategory] = colors[lockedIdx!];
-      } else {
-        res[colorCategory] = colors[this.pickColorIdx(colorCategory)];
+    for (const category of this.colorCategories) {
+      const colors = this.getColorsFromCategory(category);
+      if (this.isLockedColor(category)) {
+        console.log(category, 'is locked,', lockedIdx!);
+        res[category] = colors[lockedIdx!];
+      } else if (this.hasColorsInCategory(category)) {
+        res[category] = colors[this.pickColorIdx(category)];
       }
     }
 
@@ -207,6 +287,7 @@ export class SVG {
       background: '',
       cellFill: '',
       cellStroke: '',
+      dropShadow: '',
     };
 
     for (const [category, color] of Object.entries(colors)) {
@@ -236,12 +317,12 @@ export class SVG {
 
     const svgEls: string[] = [
       `<svg xmlns="http://www.w3.org/2000/svg" width="${backgroundWH}" height="${backgroundWH}" viewbox="0 0 ${backgroundWH} ${backgroundWH}">`,
-      `<style>${this.getFormattedCSS(colors)}</style>`,
-      `<rect class="background" />`,
+      `<style>${this.formatCSS(colors)}</style>`,
       gradientTags.background,
       gradientTags.cellFill,
       gradientTags.cellStroke,
-      `<path class="pattern" d="${this.drawCompletePath(cells)}"/>`,
+      `<rect class="background" />`,
+      `<path class="pattern" d="${this.drawCompletePath(cells)}" />`,
       '</svg>',
     ];
 
@@ -254,7 +335,7 @@ export class SVG {
     let pathData = '';
 
     for (const cell of cells) {
-      const coords = this.getSVGCellCoordinates(cell);
+      const coords = this.getRawCellCoordinates(cell);
 
       if (cell.isFilled()) {
         pathData += this.drawFilledCellPath({ cell, coords });
@@ -466,7 +547,7 @@ export class SVG {
     }
   }
 
-  private getSVGCellCoordinates(coord: CellCoordinates) {
+  private getRawCellCoordinates(coord: CellCoordinates) {
     return {
       x: coord.col * (this.config.inner.cellSize + this.config.gutter),
       y: coord.row * (this.config.inner.cellSize + this.config.gutter),
@@ -485,12 +566,16 @@ export class SVG {
       svg += `${key}="${value}" `;
     svg += '>';
     for (const stop of stops) {
-      svg += '<stop ';
-      for (const [key, value] of Object.entries(stop))
-        svg += `${toTrainCase(key)}="${value}" `;
-      svg += '/>';
+      svg += `<stop offset="${stop.offset}" stop-color="${
+        stop.color
+      }" stop-opacity="${stop.opacity ?? 1}" />`;
+      svg += '';
     }
     return svg + `</${tag}>`;
+  }
+
+  private get colorCategories() {
+    return Object.keys(this.config.colors) as ColorCategory[];
   }
 }
 
@@ -520,7 +605,7 @@ type SVGRadialGradientAttributes = {
   spreadMethod?: 'pad' | 'reflect' | 'repeat';
 };
 
-type SVGColor =
+export type SVGColor =
   | string
   | {
       type: 'linearGradient';
@@ -535,16 +620,14 @@ type SVGColor =
 
 type SVGGradientColor = Exclude<SVGColor, string>;
 
-const COLOR_CATEGORIES = ['background', 'cellFill', 'cellStroke'] as const;
-
-export type ColorCategory = (typeof COLOR_CATEGORIES)[number];
+export type ColorCategory = keyof SVGConfig['colors'];
 
 type ColorsByCategory = { [K in ColorCategory]: SVGColor };
 
 type Stop = {
   offset: number | `${number}%`;
-  stopColor: string;
-  stopOpacity: number;
+  color: string;
+  opacity?: number;
 };
 
 type GradientSVGTagMap = Record<ColorCategory, string>;

@@ -31,12 +31,14 @@ export class Randomizer {
 
   choice<T>(arr: T[], weights?: number[]): T {
     if (arr.length == 0) throw new Error('Cannot choose from an empty array');
+    if (arr.length == 1) return arr[0]!;
     if (weights) return this.choiceWeighted(arr, weights);
     return arr[this.number(0, arr.length - 1)]!;
   }
 
   getChoiceIndex<T>(arr: T[], weights?: number[]): number {
     if (arr.length == 0) throw new Error('Cannot choose from an empty array');
+    if (arr.length == 1) return 0;
     if (weights) return this.choiceWeightedIndex(arr, weights).idx;
     return this.number(0, arr.length - 1);
   }

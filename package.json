@@ -9,7 +9,8 @@
     "build": "rimraf ./dist && tsup src/index.ts --format cjs,esm --dts",
     "watch": "tsup playground/index.ts --format cjs,esm --dts --watch --onSuccess \"node ./dist/index.mjs\"",
     "lint": "tsc",
-    "ci": "pnpm lint && pnpm build"
+    "ci": "pnpm lint && pnpm build",
+    "release": "pnpm run ci && changeset publish"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.1",

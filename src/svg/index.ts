@@ -1,54 +1,19 @@
-import type { GridConfig } from './grid';
-import type { Cell, CellCoordinates } from './cell';
+import type Cell from '@/grid/cell';
+import type { CellCoordinates } from '@/grid/cell/types';
+import {
+  ColorCategory,
+  ColorsByCategory,
+  GradientSVGTagMap,
+  SVGCalculatedValues,
+  SVGColor,
+  SVGGradientColor,
+  SVGGradientTag,
+  SVGInnerConfig,
+  Stop,
+} from './types';
 import { isEmptyObject, toTrainCase } from './utils';
 
-type SVGInnerConfig = {
-  patternAreaRatio: number;
-  colors: {
-    background?: SVGColor[];
-    cellFill?: SVGColor[];
-    cellStroke?: SVGColor[];
-    dropShadow?: string[];
-  };
-  lockColors: ColorCategory[] | 'all';
-  flow: boolean;
-  gutter: number;
-  cellRounding: { inner: number; outer: number };
-  strokeWidth: number;
-  paintOrder: 'stroke' | 'normal';
-  strokeLineJoin: 'miter' | 'miter-clip' | 'round' | 'bevel' | 'arcs';
-  filters: {
-    blur?: string;
-    brightness?: string;
-    contrast?: string;
-    dropShadow?: [string, string, string];
-    grayscale?: string;
-    hueRotate?: string;
-    invert?: string;
-    opacity?: string;
-    saturate?: string;
-    sepia?: string;
-  };
-  inner: {
-    cellSize: number;
-    gridSize: Exclude<GridConfig['size'], number>;
-    colorIdxPicker: (options: {
-      category: ColorCategory;
-      colors: SVGColor[];
-    }) => number;
-  };
-};
-
-type SVGCalculatedValues = {
-  ptnWidth: number;
-  ptnHeight: number;
-  backgroundWH: number;
-  cellRadius: { outer: number; inner: number };
-};
-
-export type SVGConfig = Omit<SVGInnerConfig, 'inner'>;
-
-export class SVG {
+class SVG {
   private string: string = '';
   private readonly config: Readonly<SVGInnerConfig>;
   private readonly calculated: Readonly<SVGCalculatedValues>;
@@ -570,55 +535,4 @@ export class SVG {
   }
 }
 
-type SVGGradientTag = 'radialGradient' | 'linearGradient';
-
-type SVGLinearGradientAttributes = {
-  x1?: string;
-  x2?: string;
-  y1?: string;
-  y2?: string;
-  gradientUnits?: 'userSpaceOnUse' | 'objectBoundingBox';
-  gradientTransform?: string;
-  spreadMethod?: 'pad' | 'reflect' | 'repeat';
-  href?: string;
-};
-
-type SVGRadialGradientAttributes = {
-  cx?: string;
-  cy?: string;
-  r?: string;
-  fx?: string;
-  fy?: string;
-  fr?: string | 'userSpaceOnUse' | 'objectBoundingBox';
-  transform?: string;
-  href?: string;
-  r2: string;
-  spreadMethod?: 'pad' | 'reflect' | 'repeat';
-};
-
-export type SVGColor =
-  | string
-  | {
-      type: 'linearGradient';
-      attrs: SVGLinearGradientAttributes;
-      stops: Array<Stop>;
-    }
-  | {
-      type: 'radialGradient';
-      attrs: SVGRadialGradientAttributes;
-      stops: Array<Stop>;
-    };
-
-type SVGGradientColor = Exclude<SVGColor, string>;
-
-export type ColorCategory = keyof SVGConfig['colors'];
-
-type ColorsByCategory = { [K in ColorCategory]: SVGColor };
-
-type Stop = {
-  offset: number | `${number}%`;
-  color: string;
-  opacity?: number;
-};
-
-type GradientSVGTagMap = Record<ColorCategory, string>;
+export default SVG;

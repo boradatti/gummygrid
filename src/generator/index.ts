@@ -1,82 +1,12 @@
-import { Grid } from '@/utils/grid';
-import type { GridConfig } from '@/utils/grid';
-import { SVG } from '@/utils/svg';
-import type { ColorCategory, SVGConfig } from '@/utils/svg';
-import { Randomizer, WeightLengthMismatchError } from '@/utils/randomizer';
+import Grid from '@/grid';
+import Randomizer from '@/randomizer';
+import { WeightLengthMismatchError } from '@/randomizer/errors';
+import SVG from '@/svg';
+import { DEFAULT_AVATAR_GENERATOR_CONFIG } from './constants';
+import type { AvatarGeneratorConfig, TwoLevelPartial } from './types';
+import { mergeObjectsRecursively } from './utils';
 
-type RandomizerConfig = {
-  salt: number;
-  bias: {
-    cellFillProbability: number;
-    colorWeights: Partial<Record<ColorCategory, number[]>>;
-  };
-};
-
-type AvatarGeneratorConfig = {
-  randomizer: RandomizerConfig;
-  grid: GridConfig;
-  svg: SVGConfig;
-};
-
-const defaultAvatarGeneratorConfig: AvatarGeneratorConfig = {
-  randomizer: {
-    salt: 0,
-    bias: {
-      cellFillProbability: 0.5,
-      colorWeights: {},
-    },
-  },
-  grid: {
-    size: {
-      rows: 5,
-      columns: 5,
-    },
-    ensureFill: {
-      topBottom: false,
-      leftRight: false,
-    },
-    verticalSymmetry: false,
-  },
-  svg: {
-    patternAreaRatio: 0.675,
-    colors: {
-      background: ['#ededfe'],
-      cellFill: [
-        '#019244',
-        '#11adc8',
-        '#2e3192',
-        '#3aa17e',
-        '#3e72bd',
-        '#4f00bc',
-        '#662d8c',
-        '#8e78ff',
-        '#d4145a',
-        '#ed1f26',
-        '#fbb03b',
-        '#fd811d',
-      ],
-      cellStroke: [],
-      dropShadow: [],
-    },
-    lockColors: [],
-    cellRounding: {
-      outer: 0,
-      inner: 0,
-    },
-    gutter: 0,
-    flow: true,
-    strokeWidth: 0,
-    filters: {},
-    paintOrder: 'stroke',
-    strokeLineJoin: 'miter',
-  },
-};
-
-type TwoLevelPartial<T> = {
-  [K in keyof T]?: Partial<T[K]>;
-};
-
-export class GummyGrid {
+class GummyGrid {
   config: AvatarGeneratorConfig;
   rand: Randomizer;
   grid: Grid;
@@ -84,7 +14,7 @@ export class GummyGrid {
 
   public constructor(config?: TwoLevelPartial<AvatarGeneratorConfig>) {
     this.config = mergeObjectsRecursively(
-      defaultAvatarGeneratorConfig,
+      DEFAULT_AVATAR_GENERATOR_CONFIG,
       config ?? {}
     ) as AvatarGeneratorConfig;
     this.rand = this.initializeRandomizer();
@@ -159,19 +89,4 @@ export class GummyGrid {
   }
 }
 
-// * utils:
-
-function mergeObjectsRecursively(
-  obj1: Record<any, any>,
-  obj2: Record<any, any>
-) {
-  for (const p in obj2) {
-    if (obj2[p]?.constructor === Object) {
-      obj1[p] = mergeObjectsRecursively(obj1[p], obj2[p]);
-    } else {
-      obj1[p] = obj2[p];
-    }
-  }
-
-  return obj1;
-}
+export default GummyGrid;

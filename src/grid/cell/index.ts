@@ -1,6 +1,12 @@
-import type { Grid } from './grid';
+import type Grid from '@/grid';
+import {
+  CELL_NEIGHBOR_CORNERS,
+  CELL_NEIGHBOR_DIRECTIONS,
+  CELL_NEIGHBOR_SIDES,
+} from './constants';
+import { CellCoordinates, CellNeighborDirection } from './types';
 
-export class Cell {
+class Cell {
   private grid: Grid;
   private filled: boolean;
   private pooled: boolean | null;
@@ -194,22 +200,4 @@ export class Cell {
   }
 }
 
-export type CellCoordinates = { col: number; row: number };
-
-export const CELL_NEIGHBOR_SIDES = ['LEFT', 'TOP', 'RIGHT', 'BOTTOM'] as const;
-export const CELL_NEIGHBOR_CORNERS = [
-  'TOP_LEFT',
-  'TOP_RIGHT',
-  'BOTTOM_RIGHT',
-  'BOTTOM_LEFT',
-] as const;
-export const CELL_NEIGHBOR_DIRECTIONS = [
-  ...CELL_NEIGHBOR_SIDES,
-  ...CELL_NEIGHBOR_CORNERS,
-] as const;
-
-export type CellNeighborSide = (typeof CELL_NEIGHBOR_SIDES)[number];
-export type CellNeighborCorner = (typeof CELL_NEIGHBOR_CORNERS)[number];
-export type CellNeighborDirection = (typeof CELL_NEIGHBOR_DIRECTIONS)[number];
-
-export type CellEdgeOrientation = 'VERTICAL' | 'HORIZONTAL';
+export default Cell;

@@ -1,22 +1,9 @@
-import { Cell, CELL_NEIGHBOR_DIRECTIONS } from '@/utils/cell';
-import type { CellCoordinates, CellNeighborDirection } from '@/utils/cell';
+import Cell from './cell';
+import { CELL_NEIGHBOR_DIRECTIONS } from './cell/constants';
+import type { CellCoordinates } from './cell/types';
+import { GridInnerConfig } from './types';
 
-type GridInnerConfig = {
-  size: number | { rows: number; columns: number };
-  verticalSymmetry: boolean;
-  ensureFill: {
-    topBottom?: boolean;
-    leftRight?: boolean;
-  };
-  inner: {
-    fillDecider: () => boolean;
-    numberPicker: (min: number, max: number) => number;
-  };
-};
-
-export type GridConfig = Omit<GridInnerConfig, 'inner'>;
-
-export class Grid {
+class Grid {
   private readonly config: GridInnerConfig;
   private readonly grid: Array<Array<Cell>>;
   public readonly size: Readonly<{ rows: number; columns: number }>;
@@ -299,3 +286,5 @@ export class Grid {
     return console.log(this.getMatrix());
   }
 }
+
+export default Grid;

@@ -125,7 +125,7 @@ export class SVG {
 
   private pickColorIdx(category: ColorCategory) {
     const colors = this.getColorsFromCategory(category);
-    // console.log({ colors });
+
     return this.config.inner.colorIdxPicker({
       category,
       colors,
@@ -145,8 +145,6 @@ export class SVG {
   }
 
   private formatCSS(colors: ColorsByCategory): string {
-    // console.log('📞 getFormattedCSS');
-    // console.log({ colors });
     const css = `
       :root {
         --color-background: ${
@@ -188,8 +186,6 @@ export class SVG {
         transform: translate(var(--transform-x), var(--transform-y));
       }
     `;
-
-    // console.log('🧐', this.formatCSSFiltersDeclaration());
 
     return this.compressCSS(css);
   }
@@ -242,7 +238,6 @@ export class SVG {
 
     const rOuter = (cellSize * this.config.cellRounding.outer) / 2;
     const rInner = (cellSize * this.config.cellRounding.inner) / 2;
-    // console.log({ rOuter, rInner });
 
     return {
       ptnWidth,
@@ -263,7 +258,7 @@ export class SVG {
     let res = {} as any;
 
     const lockedColors = this.getLockedColors();
-    // console.log({ lockedColors });
+
     let lockedIdx: number;
     if (lockedColors.length) {
       const lockedColor = lockedColors[0]!;
@@ -273,7 +268,6 @@ export class SVG {
     for (const category of this.colorCategories) {
       const colors = this.getColorsFromCategory(category);
       if (this.isLockedColor(category)) {
-        // console.log(category, 'is locked,', lockedIdx!);
         res[category] = colors[lockedIdx!];
       } else if (this.hasColorsInCategory(category)) {
         res[category] = colors[this.pickColorIdx(category)];
@@ -309,11 +303,7 @@ export class SVG {
 
   public buildFrom(cells: Iterable<Cell>) {
     const backgroundWH = this.calculated.backgroundWH.toFixed(2);
-
     const colors = this.getAllColors();
-    // console.log('👀👀👀');
-    // console.log(colors);
-
     const gradientTags = this.getGradientSVGTags(colors);
 
     const svgEls: string[] = [

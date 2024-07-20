@@ -4,8 +4,8 @@ import type { ColorCategory, SVGConfig } from '@/svg/types';
 export type RandomizerConfig = {
   salt: number;
   bias: {
-    cellFillProbability: number;
-    colorWeights: Partial<Record<ColorCategory, number[]>>;
+    cellFillProbability?: number;
+    colorWeights?: Partial<Record<ColorCategory, number[]>>;
   };
 };
 

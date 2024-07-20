@@ -31,15 +31,15 @@ export class Randomizer {
 
   choice<T>(arr: T[], weights?: number[]): T {
     if (arr.length == 0) throw new Error('Cannot choose from an empty array');
-    if (arr.length == 1) return arr[0]!;
     if (weights) return this.choiceWeighted(arr, weights);
+    if (arr.length == 1) return arr[0]!;
     return arr[this.number(0, arr.length - 1)]!;
   }
 
   getChoiceIndex<T>(arr: T[], weights?: number[]): number {
     if (arr.length == 0) throw new Error('Cannot choose from an empty array');
-    if (arr.length == 1) return 0;
     if (weights) return this.choiceWeightedIndex(arr, weights).idx;
+    if (arr.length == 1) return 0;
     return this.number(0, arr.length - 1);
   }
 
@@ -53,9 +53,11 @@ export class Randomizer {
     weights: number[]
   ): { idx: number; arr: T[] } {
     if (arr.length !== weights.length)
-      throw new Error(
+      throw new WeightLengthMismatchError(
         `Length of \`weights\` must equal that of \`arr\` (${arr.length})`
       );
+
+    if (arr.length == 1) return { arr, idx: 0 };
 
     weights = this.normalizeWeights(weights);
 
@@ -157,4 +159,11 @@ function binaryFindIndex<T>(arr: T[], sval: T): number {
   // `lowerBound` is now the index where `sval` would
   // need to be inserted while keeping the array sorted
   return lowerBound;
+}
+
+export class WeightLengthMismatchError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'WeightLengthMismatchError';
+  }
 }

@@ -2,13 +2,13 @@ import { Grid } from '@/utils/grid';
 import type { GridConfig } from '@/utils/grid';
 import { SVG } from '@/utils/svg';
 import type { ColorCategory, SVGConfig } from '@/utils/svg';
-import { Randomizer } from '@/utils/randomizer';
+import { Randomizer, WeightLengthMismatchError } from '@/utils/randomizer';
 
 type RandomizerConfig = {
   salt: number;
   bias: {
     cellFillProbability: number;
-    colorWeights?: Record<ColorCategory, number[]>; // todo: ensure correct length
+    colorWeights: Partial<Record<ColorCategory, number[]>>;
   };
 };
 
@@ -23,7 +23,7 @@ const defaultAvatarGeneratorConfig: AvatarGeneratorConfig = {
     salt: 0,
     bias: {
       cellFillProbability: 0.5,
-      colorWeights: undefined,
+      colorWeights: {},
     },
   },
   grid: {
@@ -125,7 +125,17 @@ export class GummyGrid {
       inner: {
         colorIdxPicker: ({ category, colors }) => {
           const weights = this.config.randomizer.bias!.colorWeights?.[category];
-          return this.rand.getChoiceIndex(colors, weights);
+          try {
+            return this.rand.getChoiceIndex(colors, weights);
+          } catch (e) {
+            if (e instanceof WeightLengthMismatchError) {
+              throw new Error(
+                `The color and weight arrays for category "${category}" must be of equal length`
+              );
+            } else {
+              throw e;
+            }
+          }
         },
         cellSize: 10,
         gridSize: this.grid.size,

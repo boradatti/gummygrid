@@ -5,8 +5,8 @@ import { isEmptyObject, toTrainCase } from './utils';
 type SVGInnerConfig = {
   patternAreaRatio: number;
   colors: {
-    background: SVGColor[];
-    cellFill: SVGColor[];
+    background?: SVGColor[];
+    cellFill?: SVGColor[];
     cellStroke?: SVGColor[];
     dropShadow?: string[];
   };
@@ -75,9 +75,9 @@ export class SVG {
 
   private validateColorArrays() {
     const { colors, strokeWidth } = this.config;
-    if (colors.background.length == 0 || colors.cellFill.length == 0)
+    if (colors.background?.length == 0 || colors.cellFill?.length == 0)
       throw new Error(
-        'colors.cellFill and colors.background must be of length greater than 0'
+        'colors.cellFill and colors.background must be arrays of length greater than 0'
       );
     if (strokeWidth > 0 && colors.cellStroke?.length == 0)
       throw new Error(
@@ -122,7 +122,7 @@ export class SVG {
 
   private pickColorIdx(category: ColorCategory) {
     const colors = this.getColorsFromCategory(category);
-    console.log({ colors });
+    // console.log({ colors });
     return this.config.inner.colorIdxPicker({
       category,
       colors,
@@ -142,8 +142,8 @@ export class SVG {
   }
 
   private formatCSS(colors: ColorsByCategory): string {
-    console.log('📞 getFormattedCSS');
-    console.log({ colors });
+    // console.log('📞 getFormattedCSS');
+    // console.log({ colors });
     const css = `
       :root {
         --color-background: ${
@@ -186,7 +186,7 @@ export class SVG {
       }
     `;
 
-    console.log('🧐', this.formatCSSFiltersDeclaration());
+    // console.log('🧐', this.formatCSSFiltersDeclaration());
 
     return this.compressCSS(css);
   }
@@ -205,8 +205,8 @@ export class SVG {
   }
 
   private formatCSSDropShadow(dropShadowColor: string) {
-    console.log('📞 formatCSSDropShadow');
-    console.log({ dropShadowColor });
+    // console.log('📞 formatCSSDropShadow');
+    // console.log({ dropShadowColor });
     if (!dropShadowColor) return ''; // todo: revise
     return `--color-cell-drop-shadow: ${dropShadowColor};`;
   }
@@ -241,7 +241,7 @@ export class SVG {
 
     const rOuter = (cellSize * this.config.cellRounding.outer) / 2;
     const rInner = (cellSize * this.config.cellRounding.inner) / 2;
-    console.log({ rOuter, rInner });
+    // console.log({ rOuter, rInner });
 
     return {
       ptnWidth,
@@ -262,7 +262,7 @@ export class SVG {
     let res = {} as any;
 
     const lockedColors = this.getLockedColors();
-    console.log({ lockedColors });
+    // console.log({ lockedColors });
     let lockedIdx: number;
     if (lockedColors.length) {
       const lockedColor = lockedColors[0]!;
@@ -272,7 +272,7 @@ export class SVG {
     for (const category of this.colorCategories) {
       const colors = this.getColorsFromCategory(category);
       if (this.isLockedColor(category)) {
-        console.log(category, 'is locked,', lockedIdx!);
+        // console.log(category, 'is locked,', lockedIdx!);
         res[category] = colors[lockedIdx!];
       } else if (this.hasColorsInCategory(category)) {
         res[category] = colors[this.pickColorIdx(category)];
@@ -310,8 +310,8 @@ export class SVG {
     const backgroundWH = this.calculated.backgroundWH.toFixed(2);
 
     const colors = this.getAllColors();
-    console.log('👀👀👀');
-    console.log(colors);
+    // console.log('👀👀👀');
+    // console.log(colors);
 
     const gradientTags = this.getGradientSVGTags(colors);
 

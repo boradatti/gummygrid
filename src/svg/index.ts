@@ -18,10 +18,44 @@ class SVG {
   private readonly config: Readonly<SVGInnerConfig>;
   private readonly calculated: Readonly<SVGCalculatedValues>;
 
-  public constructor(config: SVGInnerConfig) {
+  constructor(config: SVGInnerConfig) {
     this.config = config;
     this.validateConfig();
     this.calculated = this.getCalculatedValues();
+  }
+
+  buildFrom(cells: Iterable<Cell>) {
+    const backgroundWH = this.calculated.backgroundWH.toFixed(2);
+    const colors = this.getAllColors();
+    const gradientTags = this.getGradientSVGTags(colors);
+
+    const svgEls: string[] = [
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${backgroundWH}" height="${backgroundWH}" viewbox="0 0 ${backgroundWH} ${backgroundWH}">`,
+      `<style>${this.formatCSS(colors)}</style>`,
+      gradientTags.background,
+      gradientTags.cellFill,
+      gradientTags.cellStroke,
+      `<rect class="background" />`,
+      `<path class="pattern" d="${this.drawCompletePath(cells)}" />`,
+      '</svg>',
+    ];
+
+    const svg = svgEls.join('');
+
+    this.string = svg;
+  }
+
+  toString() {
+    return this.string;
+  }
+
+  toURLEncodedString(options: { withPrefix: boolean } = { withPrefix: false }) {
+    const encodedString = encodeURIComponent(this.string);
+    if (options.withPrefix) {
+      return `data:image/svg+xml;charset=utf-8,${encodedString}`;
+    } else {
+      return encodedString;
+    }
   }
 
   private validateConfig() {
@@ -266,27 +300,6 @@ class SVG {
     return tags;
   }
 
-  public buildFrom(cells: Iterable<Cell>) {
-    const backgroundWH = this.calculated.backgroundWH.toFixed(2);
-    const colors = this.getAllColors();
-    const gradientTags = this.getGradientSVGTags(colors);
-
-    const svgEls: string[] = [
-      `<svg xmlns="http://www.w3.org/2000/svg" width="${backgroundWH}" height="${backgroundWH}" viewbox="0 0 ${backgroundWH} ${backgroundWH}">`,
-      `<style>${this.formatCSS(colors)}</style>`,
-      gradientTags.background,
-      gradientTags.cellFill,
-      gradientTags.cellStroke,
-      `<rect class="background" />`,
-      `<path class="pattern" d="${this.drawCompletePath(cells)}" />`,
-      '</svg>',
-    ];
-
-    const svg = svgEls.join('');
-
-    this.string = svg;
-  }
-
   drawCompletePath(cells: Iterable<Cell>) {
     let pathData = '';
 
@@ -486,21 +499,6 @@ class SVG {
     }
 
     return pathData;
-  }
-
-  public toString() {
-    return this.string;
-  }
-
-  public toURLEncodedString(
-    options: { withPrefix: boolean } = { withPrefix: false }
-  ) {
-    const encodedString = encodeURIComponent(this.string);
-    if (options.withPrefix) {
-      return `data:image/svg+xml;charset=utf-8,${encodedString}`;
-    } else {
-      return encodedString;
-    }
   }
 
   private getRawCellCoordinates(coord: CellCoordinates) {

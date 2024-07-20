@@ -1,5 +1,4 @@
 import Cell from './cell';
-import { CELL_NEIGHBOR_DIRECTIONS } from './cell/constants';
 import type { CellCoordinates } from './cell/types';
 import { GridInnerConfig } from './types';
 
@@ -8,10 +7,71 @@ class Grid {
   private readonly grid: Array<Array<Cell>>;
   public readonly size: Readonly<{ rows: number; columns: number }>;
 
-  public constructor(config: GridInnerConfig) {
+  constructor(config: GridInnerConfig) {
     this.config = config;
     this.size = this.getNormalizedSize();
     this.grid = this.getInitialGrid();
+  }
+
+  wannaFill() {
+    return this.config.inner.fillDecider();
+  }
+
+  pickNumber(min: number, max: number) {
+    return this.config.inner.numberPicker(min, max);
+  }
+
+  build() {
+    this.generateCells();
+    if (this.needsTopBottomCells()) this.ensureTopBottomCells();
+    if (this.needsLeftRightCells()) this.ensureLeftRightCells();
+  }
+
+  getCell({ row, col }: CellCoordinates) {
+    return this.grid[row]?.[col];
+  }
+
+  isHorizontallyOddSized() {
+    return this.size.columns % 2 !== 0;
+  }
+
+  isVerticallyOddSized() {
+    return this.size.rows % 2 !== 0;
+  }
+
+  // todo: remove?
+  clear() {
+    for (const cell of this.iterateCells()) {
+      cell.unfill();
+    }
+  }
+
+  log() {
+    const loggableGridArr = this.grid.map((row) =>
+      row.map((cell) => (cell.isFilled() ? '•' : ' '))
+    );
+    const loggableGrid = loggableGridArr.map((row) => row.join(' ')).join('\n');
+    console.log(loggableGrid);
+  }
+
+  getMatrix() {
+    return this.grid.map((r) => r.map((c) => +c.isFilled()));
+  }
+
+  logAsMatrix() {
+    return console.log(this.getMatrix());
+  }
+
+  *iterateCells() {
+    for (const row of this.iterateRows()) {
+      for (const col of this.iterateColumns()) {
+        yield this.grid[row]![col]!;
+      }
+    }
+  }
+
+  private isVerticallySymmetrical() {
+    return this.config.verticalSymmetry == true;
   }
 
   private getNormalizedSize() {
@@ -40,34 +100,12 @@ class Grid {
     return grid;
   }
 
-  public wannaFill() {
-    return this.config.inner.fillDecider();
-  }
-
-  public pickNumber(min: number, max: number) {
-    return this.config.inner.numberPicker(min, max);
-  }
-
-  public hasFilledCell(coord: CellCoordinates) {
-    return this.getCell(coord)!.isFilled();
-  }
-
-  public build() {
-    this.generateCells();
-    if (this.needsTopBottomCells()) this.ensureTopBottomCells();
-    if (this.needsLeftRightCells()) this.ensureLeftRightCells();
-  }
-
   private needsTopBottomCells() {
     return this.config.ensureFill.topBottom == true;
   }
 
   private needsLeftRightCells() {
     return this.config.ensureFill.leftRight == true;
-  }
-
-  public getCell({ row, col }: CellCoordinates) {
-    return this.grid[row]?.[col];
   }
 
   private ensureTopBottomCells() {
@@ -104,14 +142,6 @@ class Grid {
         }
       }
     }
-  }
-
-  public isHorizontallyOddSized() {
-    return this.size.columns % 2 !== 0;
-  }
-
-  public isVerticallyOddSized() {
-    return this.size.rows % 2 !== 0;
   }
 
   private fillCellAndParallel(cell: Cell) {
@@ -152,12 +182,6 @@ class Grid {
     return lastColumn.some((cell) => cell.isFilled());
   }
 
-  public clear() {
-    for (const cell of this.iterateCells()) {
-      cell.unfill();
-    }
-  }
-
   private *iterateRows() {
     for (let r = 0; r < this.size.rows; r++) {
       yield r;
@@ -170,24 +194,12 @@ class Grid {
     }
   }
 
-  public *iterateCells() {
-    for (const row of this.iterateRows()) {
-      for (const col of this.iterateColumns()) {
-        yield this.grid[row]![col]!;
-      }
-    }
-  }
-
   private *iterateFillalbleColumns() {
     // iterate up to middle column
     // (inclusive if grid is odd-zied, exclusive if even-sized)
     for (let c = 0; c < Math.ceil(this.size.columns / 2); c++) {
       yield c;
     }
-  }
-
-  public isVerticallySymmetrical() {
-    return this.config.verticalSymmetry == true;
   }
 
   private *iterateFillableRows() {
@@ -205,85 +217,6 @@ class Grid {
         yield this.grid[row]![col]!;
       }
     }
-  }
-
-  public log() {
-    const loggableGridArr = this.grid.map((row) =>
-      row.map((cell) => (cell.isFilled() ? '•' : ' '))
-    );
-    const loggableGrid = loggableGridArr.map((row) => row.join(' ')).join('\n');
-    console.log(loggableGrid);
-  }
-
-  public *iterateIslandCells() {
-    const visited = new Set<Cell>();
-
-    for (const cell of this.iterateCells()) {
-      if (visited.has(cell) || cell.isEmpty()) continue;
-      visited.add(cell);
-      const stack: Array<Cell> = [cell];
-      while (stack.length > 0) {
-        const cell = stack.pop()!;
-        for (const direction of CELL_NEIGHBOR_DIRECTIONS) {
-          const neighbor = cell.getNeighbor(direction);
-          if (neighbor && !visited.has(neighbor) && neighbor.isFilled()) {
-            visited.add(neighbor);
-            stack.push(neighbor);
-          }
-        }
-      }
-
-      yield cell;
-    }
-  }
-
-  public *iteratePoolCells() {
-    const poolCells = new Set<Cell>();
-    const spillCells = new Set<Cell>();
-    for (const cell of this.iterateCells()) {
-      if (cell.isEmpty()) {
-        if (cell.isEdgeCell()) {
-          spillCells.add(cell);
-        } else {
-          poolCells.add(cell); // i.e. let's first consider all non-edge empty cells to be pool cells
-        }
-      }
-    }
-
-    // now let's exclude spill cells from the pool cell candidate set
-    for (const cell of spillCells) {
-      for (const neighbor of cell.iterateOrthogonalNeighbors()) {
-        if (poolCells.has(neighbor)) {
-          poolCells.delete(neighbor);
-          spillCells.add(neighbor);
-        }
-      }
-    }
-
-    // finally, let's yield the first cell we find in each pool
-    for (const cell of poolCells) {
-      let firstPoolCell = cell;
-      const stack: Cell[] = [cell];
-      while (stack.length) {
-        const neighborPoolCell = stack.pop()!;
-        poolCells.delete(neighborPoolCell);
-        neighborPoolCell.markPooled(true);
-        for (const neighbor of neighborPoolCell.iterateAllNeighbors()) {
-          if (poolCells.has(neighbor)) {
-            stack.push(neighbor);
-          }
-        }
-      }
-      yield firstPoolCell;
-    }
-  }
-
-  public getMatrix() {
-    return this.grid.map((r) => r.map((c) => +c.isFilled()));
-  }
-
-  public logAsMatrix() {
-    return console.log(this.getMatrix());
   }
 }
 

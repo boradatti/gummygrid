@@ -21,11 +21,11 @@ class Cell {
     this.pooled = null;
   }
 
-  public markPooled(value: boolean) {
+  markPooled(value: boolean) {
     this.pooled = value;
   }
 
-  public isEdgeCell() {
+  isEdgeCell() {
     return (
       this.row == 0 ||
       this.row == this.grid.size.rows - 1 ||
@@ -34,7 +34,7 @@ class Cell {
     );
   }
 
-  public *iterateAllNeighbors() {
+  *iterateAllNeighbors() {
     for (const direction of CELL_NEIGHBOR_DIRECTIONS) {
       const neighbor = this.getNeighbor(direction);
       if (neighbor) {
@@ -43,7 +43,7 @@ class Cell {
     }
   }
 
-  public *iterateOrthogonalNeighbors() {
+  *iterateOrthogonalNeighbors() {
     for (const side of CELL_NEIGHBOR_SIDES) {
       const neighbor = this.getNeighbor(side);
       if (neighbor) {
@@ -52,16 +52,87 @@ class Cell {
     }
   }
 
-  public belongsToPool() {
+  belongsToPool() {
     return this.pooled;
   }
 
-  public fill() {
+  fill() {
     this.filled = true;
   }
 
-  public unfill() {
+  // todo: remove?
+  unfill() {
     this.filled = false;
+  }
+
+  fillHorizontalParallel() {
+    this.getHorizontalParallel()!.fill();
+  }
+
+  fillVerticalParallel() {
+    const parallel = this.getVerticalParallel();
+    parallel.fill();
+    if (parallel.hasHorizontalParallel()) parallel.fillHorizontalParallel();
+  }
+
+  hasHorizontalParallel() {
+    // in order for a cell NOT to have a parallel, the grid needs to
+    // be odd-sized AND the cell needs to be in a middle column
+    // therefore, if at least one of these conditions isn't met,
+    // we know that the cell DOES have a parallel
+    return !this.grid.isHorizontallyOddSized() || !this.isInMiddleColumn();
+  }
+
+  hasVerticalParallel() {
+    return !this.grid.isVerticallyOddSized() || !this.isInMiddleRow();
+  }
+
+  isInMiddleColumn() {
+    return this.col === Math.floor(this.grid.size.columns / 2);
+  }
+
+  isInMiddleRow() {
+    return this.row === Math.floor(this.grid.size.rows / 2);
+  }
+
+  isFilled() {
+    return this.filled === true;
+  }
+
+  isEmpty() {
+    return !this.filled;
+  }
+
+  getNeighbor(side: CellNeighborDirection): Cell | undefined {
+    return this._getNeighbor({ onSide: side });
+  }
+
+  getEqualNeighbor(side: CellNeighborDirection) {
+    return this._getNeighbor({
+      onSide: side,
+      status: this.isFilled() ? 'filled' : 'empty',
+    });
+  }
+
+  hasFilledNeighbor(side: CellNeighborDirection) {
+    const neighbor = this.getNeighbor(side);
+    return neighbor !== undefined && neighbor.isFilled();
+  }
+
+  hasEqualNeighbor(side: CellNeighborDirection) {
+    return this._hasNeighbor({
+      onSide: side,
+      status: this.isFilled() ? 'filled' : 'empty',
+    });
+  }
+
+  *iterateDiagonalNeighbors() {
+    for (const corner of CELL_NEIGHBOR_CORNERS) {
+      const neighbor = this.getNeighbor(corner);
+      if (neighbor) {
+        yield { neighbor, corner };
+      }
+    }
   }
 
   private getHorizontalParallelCoords() {
@@ -76,10 +147,6 @@ class Cell {
     return this.grid.getCell(coords);
   }
 
-  public fillHorizontalParallel() {
-    this.getHorizontalParallel()!.fill();
-  }
-
   private getVerticalParallelCoords() {
     return {
       col: this.col,
@@ -90,40 +157,6 @@ class Cell {
   private getVerticalParallel() {
     const coords = this.getVerticalParallelCoords();
     return this.grid.getCell(coords)!;
-  }
-
-  public fillVerticalParallel() {
-    const parallel = this.getVerticalParallel();
-    parallel.fill();
-    if (parallel.hasHorizontalParallel()) parallel.fillHorizontalParallel();
-  }
-
-  public hasHorizontalParallel() {
-    // in order for a cell NOT to have a parallel, the grid needs to
-    // be odd-sized AND the cell needs to be in a middle column
-    // therefore, if at least one of these conditions isn't met,
-    // we know that the cell DOES have a parallel
-    return !this.grid.isHorizontallyOddSized() || !this.isInMiddleColumn();
-  }
-
-  public hasVerticalParallel() {
-    return !this.grid.isVerticallyOddSized() || !this.isInMiddleRow();
-  }
-
-  public isInMiddleColumn() {
-    return this.col === Math.floor(this.grid.size.columns / 2);
-  }
-
-  public isInMiddleRow() {
-    return this.row === Math.floor(this.grid.size.rows / 2);
-  }
-
-  public isFilled() {
-    return this.filled === true;
-  }
-
-  public isEmpty() {
-    return !this.filled;
   }
 
   private getNeighborCoordinates(side: CellNeighborDirection): CellCoordinates {
@@ -147,10 +180,6 @@ class Cell {
     }
   }
 
-  public getNeighbor(side: CellNeighborDirection): Cell | undefined {
-    return this._getNeighbor({ onSide: side });
-  }
-
   private _getNeighbor(options: {
     onSide: CellNeighborDirection;
     status?: 'filled' | 'empty' | 'any';
@@ -169,34 +198,6 @@ class Cell {
     status?: 'filled' | 'empty' | 'any';
   }) {
     return !!this._getNeighbor(options);
-  }
-
-  public getEqualNeighbor(side: CellNeighborDirection) {
-    return this._getNeighbor({
-      onSide: side,
-      status: this.isFilled() ? 'filled' : 'empty',
-    });
-  }
-
-  public hasFilledNeighbor(side: CellNeighborDirection) {
-    const neighbor = this.getNeighbor(side);
-    return neighbor !== undefined && neighbor.isFilled();
-  }
-
-  public hasEqualNeighbor(side: CellNeighborDirection) {
-    return this._hasNeighbor({
-      onSide: side,
-      status: this.isFilled() ? 'filled' : 'empty',
-    });
-  }
-
-  public *iterateDiagonalNeighbors() {
-    for (const corner of CELL_NEIGHBOR_CORNERS) {
-      const neighbor = this.getNeighbor(corner);
-      if (neighbor) {
-        yield { neighbor, corner };
-      }
-    }
   }
 }
 

@@ -12,7 +12,7 @@ class GummyGrid {
   grid: Grid;
   svg: SVG;
 
-  public constructor(config?: TwoLevelPartial<AvatarGeneratorConfig>) {
+  constructor(config?: TwoLevelPartial<AvatarGeneratorConfig>) {
     this.config = mergeObjectsRecursively(
       DEFAULT_AVATAR_GENERATOR_CONFIG,
       config ?? {}
@@ -23,7 +23,7 @@ class GummyGrid {
     this.connectLockedColorWeights();
   }
 
-  public buildFrom(value: string) {
+  buildFrom(value: string) {
     this.rand.setSeed(value);
     this.grid.build();
     this.svg.buildFrom(this.grid.iterateCells());

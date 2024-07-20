@@ -32,8 +32,8 @@ const defaultAvatarGeneratorConfig: AvatarGeneratorConfig = {
       columns: 5,
     },
     ensureFill: {
-      topBottom: true,
-      leftRight: true,
+      topBottom: false,
+      leftRight: false,
     },
     verticalSymmetry: false,
   },

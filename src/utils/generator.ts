@@ -87,7 +87,6 @@ export class GummyGrid {
       defaultAvatarGeneratorConfig,
       config ?? {}
     ) as AvatarGeneratorConfig;
-    console.log('colors:', this.config.svg.colors);
     this.rand = this.initializeRandomizer();
     this.grid = this.initializeGrid();
     this.svg = this.initializeSVG();

@@ -74,25 +74,28 @@ export class SVG {
   }
 
   private validateColorArrays() {
-    const { colors, strokeWidth } = this.config;
+    const { colors, strokeWidth, filters } = this.config;
     if (colors.background?.length == 0 || colors.cellFill?.length == 0)
       throw new Error(
         'colors.cellFill and colors.background must be arrays of length greater than 0'
       );
-    if (strokeWidth > 0 && colors.cellStroke?.length == 0)
-      throw new Error(
-        "colors.cellStroke must be of length greater than 0, or strokeWidth shouldn't be specified"
+    if (strokeWidth > 0 && colors.cellStroke?.length == 0) {
+      console.log(
+        "⚠️  strokeWidth won't have any effect if colors.cellStroke is not specified"
       );
-    if ('dropShadow' in this.config.filters && colors.dropShadow?.length == 0) {
-      throw new Error(
-        "colors.dropShadow must be of length greater than 0, or filters.dropShadow shouldn't be specified"
+    }
+    if (!strokeWidth && colors.cellStroke?.length) {
+      console.log(
+        "⚠️  colors.cellStroke won't have any effect if strokeWidth is 0 or unspecified"
       );
-    } else if (
-      colors.dropShadow?.length &&
-      !('dropShadow' in this.config.filters)
-    ) {
-      throw new Error(
-        "filers.dropShadow must be specified, or colors.dropShadow shouldn't be specified"
+    }
+    if ('dropShadow' in filters && colors.dropShadow?.length == 0) {
+      console.log(
+        "⚠️  filters.dropShadow won't have any effect if colors.dropShadow is not specified"
+      );
+    } else if (colors.dropShadow?.length && !('dropShadow' in filters)) {
+      console.log(
+        "⚠️  so colors.dropShadow won't have any effect if filters.dropShadow is not specified"
       );
     }
   }
@@ -205,9 +208,7 @@ export class SVG {
   }
 
   private formatCSSDropShadow(dropShadowColor: string) {
-    // console.log('📞 formatCSSDropShadow');
-    // console.log({ dropShadowColor });
-    if (!dropShadowColor) return ''; // todo: revise
+    if (!dropShadowColor) return '';
     return `--color-cell-drop-shadow: ${dropShadowColor};`;
   }
 

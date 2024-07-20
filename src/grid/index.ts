@@ -1,30 +1,77 @@
-import { Cell } from '@/utils/cell';
-import type { CellCoordinates } from '@/utils/cell';
+import Cell from './cell';
+import type { CellCoordinates } from './cell/types';
+import { GridInnerConfig } from './types';
 
-type GridInnerConfig = {
-  size: number | { rows: number; columns: number };
-  verticalSymmetry: boolean;
-  ensureFill: {
-    topBottom: boolean;
-    leftRight: boolean;
-  };
-  inner: {
-    fillDecider: () => boolean;
-    numberPicker: (min: number, max: number) => number;
-  };
-};
-
-export type GridConfig = Omit<GridInnerConfig, 'inner'>;
-
-export class Grid {
+class Grid {
   private readonly config: GridInnerConfig;
   private readonly grid: Array<Array<Cell>>;
   public readonly size: Readonly<{ rows: number; columns: number }>;
 
-  public constructor(config: GridInnerConfig) {
+  constructor(config: GridInnerConfig) {
     this.config = config;
     this.size = this.getNormalizedSize();
     this.grid = this.getInitialGrid();
+  }
+
+  wannaFill() {
+    return this.config.inner.fillDecider();
+  }
+
+  pickNumber(min: number, max: number) {
+    return this.config.inner.numberPicker(min, max);
+  }
+
+  build() {
+    this.generateCells();
+    if (this.needsTopBottomCells()) this.ensureTopBottomCells();
+    if (this.needsLeftRightCells()) this.ensureLeftRightCells();
+  }
+
+  getCell({ row, col }: CellCoordinates) {
+    return this.grid[row]?.[col];
+  }
+
+  isHorizontallyOddSized() {
+    return this.size.columns % 2 !== 0;
+  }
+
+  isVerticallyOddSized() {
+    return this.size.rows % 2 !== 0;
+  }
+
+  // todo: remove?
+  clear() {
+    for (const cell of this.iterateCells()) {
+      cell.unfill();
+    }
+  }
+
+  log() {
+    const loggableGridArr = this.grid.map((row) =>
+      row.map((cell) => (cell.isFilled() ? '•' : ' '))
+    );
+    const loggableGrid = loggableGridArr.map((row) => row.join(' ')).join('\n');
+    console.log(loggableGrid);
+  }
+
+  getMatrix() {
+    return this.grid.map((r) => r.map((c) => +c.isFilled()));
+  }
+
+  logAsMatrix() {
+    return console.log(this.getMatrix());
+  }
+
+  *iterateCells() {
+    for (const row of this.iterateRows()) {
+      for (const col of this.iterateColumns()) {
+        yield this.grid[row]![col]!;
+      }
+    }
+  }
+
+  private isVerticallySymmetrical() {
+    return this.config.verticalSymmetry == true;
   }
 
   private getNormalizedSize() {
@@ -53,34 +100,12 @@ export class Grid {
     return grid;
   }
 
-  public wannaFill() {
-    return this.config.inner.fillDecider();
-  }
-
-  public pickNumber(min: number, max: number) {
-    return this.config.inner.numberPicker(min, max);
-  }
-
-  public hasFilledCell(coord: CellCoordinates) {
-    return this.getCell(coord).isFilled();
-  }
-
-  public build() {
-    this.generateCells();
-    if (this.needsTopBottomCells()) this.ensureTopBottomCells();
-    if (this.needsLeftRightCells()) this.ensureLeftRightCells();
-  }
-
   private needsTopBottomCells() {
     return this.config.ensureFill.topBottom == true;
   }
 
   private needsLeftRightCells() {
     return this.config.ensureFill.leftRight == true;
-  }
-
-  public getCell({ row, col }: CellCoordinates) {
-    return this.grid[row]?.[col]!;
   }
 
   private ensureTopBottomCells() {
@@ -90,11 +115,11 @@ export class Grid {
     if (!this.hasFilledCellsBottom()) rows.push(this.size.rows - 1);
     for (const row of rows) {
       const col = this.pickNumber(0, Math.floor(this.size.columns / 2));
-      this.fillCellAndParallel(this.getCell({ row, col }));
+      this.fillCellAndParallel(this.getCell({ row, col })!);
       for (const c of cols) {
         if (c === col) continue;
         if (this.wannaFill()) {
-          this.fillCellAndParallel(this.getCell({ row, col: c }));
+          this.fillCellAndParallel(this.getCell({ row, col: c })!);
           break;
         }
       }
@@ -108,23 +133,15 @@ export class Grid {
     if (!this.hasFilledCellsRight()) cols.push(this.size.columns - 1);
     for (const col of cols) {
       const row = this.pickNumber(0, Math.floor(this.size.rows / 2));
-      this.fillCellAndParallel(this.getCell({ row, col }));
+      this.fillCellAndParallel(this.getCell({ row, col })!);
       for (const r of rows) {
         if (r === row) continue;
         if (this.wannaFill()) {
-          this.fillCellAndParallel(this.getCell({ col, row: r }));
+          this.fillCellAndParallel(this.getCell({ col, row: r })!);
           break;
         }
       }
     }
-  }
-
-  public isHorizontallyOddSized() {
-    return this.size.columns % 2 !== 0;
-  }
-
-  public isVerticallyOddSized() {
-    return this.size.rows % 2 !== 0;
   }
 
   private fillCellAndParallel(cell: Cell) {
@@ -165,12 +182,6 @@ export class Grid {
     return lastColumn.some((cell) => cell.isFilled());
   }
 
-  public clear() {
-    for (const cell of this.iterateCells()) {
-      cell.unfill();
-    }
-  }
-
   private *iterateRows() {
     for (let r = 0; r < this.size.rows; r++) {
       yield r;
@@ -183,24 +194,12 @@ export class Grid {
     }
   }
 
-  public *iterateCells() {
-    for (const row of this.iterateRows()) {
-      for (const col of this.iterateColumns()) {
-        yield this.grid[row]![col]!;
-      }
-    }
-  }
-
   private *iterateFillalbleColumns() {
     // iterate up to middle column
     // (inclusive if grid is odd-zied, exclusive if even-sized)
     for (let c = 0; c < Math.ceil(this.size.columns / 2); c++) {
       yield c;
     }
-  }
-
-  public isVerticallySymmetrical() {
-    return this.config.verticalSymmetry == true;
   }
 
   private *iterateFillableRows() {
@@ -219,12 +218,6 @@ export class Grid {
       }
     }
   }
-
-  public log() {
-    const loggableGridArr = this.grid.map((row) =>
-      row.map((cell) => (cell.isFilled() ? '•' : ' '))
-    );
-    const loggableGrid = loggableGridArr.map((row) => row.join(' ')).join('\n');
-    console.log(loggableGrid);
-  }
 }
+
+export default Grid;

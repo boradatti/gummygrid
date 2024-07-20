@@ -1,3 +1,1 @@
-import { GummyGrid } from './utils/generator';
-
-export default GummyGrid;
+export { default } from '@/generator';

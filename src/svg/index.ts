@@ -65,7 +65,7 @@ class SVG {
     return new Blob([this.toString()], { type: SVG_DATA_PREFIX });
   }
 
-  getLockedColors(): ColorCategory[] {
+  get _lockedColors(): ColorCategory[] {
     if (this.config.lockColors == 'all') {
       return this.colorCategories;
     } else {
@@ -146,7 +146,7 @@ class SVG {
 
   private validateLockedColorArrays() {
     let lockedLength: number;
-    const lockColors = this.getLockedColors();
+    const lockColors = this._lockedColors;
     for (const colorCategory of lockColors) {
       const colors = this.getColorsFromCategory(colorCategory);
       lockedLength ??= colors.length;
@@ -293,7 +293,7 @@ class SVG {
   private getAllColors(): ColorsByCategory {
     let res = {} as any;
 
-    const lockedColors = this.getLockedColors();
+    const lockedColors = this._lockedColors;
 
     let lockedIdx: number;
     if (lockedColors.length) {

@@ -78,14 +78,14 @@ class GummyGrid {
   private connectLockedColorWeights() {
     const colorWeights = this.config.randomizer.bias.colorWeights ?? {};
     let weights;
-    for (const colorCategory of this.svg._getLockedColors()) {
+    for (const colorCategory of this.svg._lockedColors) {
       if (colorCategory in colorWeights) {
         weights = colorWeights[colorCategory]!;
         break;
       }
     }
     if (!weights) return;
-    for (const colorCategory of this.svg._getLockedColors()) {
+    for (const colorCategory of this.svg._lockedColors) {
       colorWeights[colorCategory] = weights!;
     }
   }

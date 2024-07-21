@@ -10,7 +10,8 @@
     "watch": "tsup playground/index.ts --format cjs,esm --dts --watch --onSuccess \"node ./dist/index.mjs\"",
     "lint": "tsc",
     "ci": "pnpm lint && pnpm build",
-    "release": "pnpm run ci && changeset publish"
+    "release": "pnpm run ci && changeset publish",
+    "bump": "git pull && pnpm changeset"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.1",

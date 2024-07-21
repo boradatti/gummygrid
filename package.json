@@ -1,6 +1,6 @@
 {
   "name": "gummygrid",
-  "description": "A visually customizable grid avatar generator.",
+  "description": "a visually customizable grid avatar generator",
   "version": "0.2.0",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -24,5 +24,9 @@
     "avatar-generator"
   ],
   "author": "boradatti",
+  "repository": {
+    "type": "git",
+    "url": "github:boradatti/gummygrid"
+  },
   "license": "MIT"
 }

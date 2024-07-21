@@ -60,7 +60,6 @@ class Cell {
     this.filled = true;
   }
 
-  // todo: remove?
   unfill() {
     this.filled = false;
   }

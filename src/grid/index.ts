@@ -39,7 +39,6 @@ class Grid {
     return this.size.rows % 2 !== 0;
   }
 
-  // todo: remove?
   clear() {
     for (const cell of this.iterateCells()) {
       cell.unfill();

@@ -3,7 +3,7 @@ import Randomizer from '@/randomizer';
 import { WeightLengthMismatchError } from '@/randomizer/errors';
 import SVG from '@/svg';
 import { DEFAULT_AVATAR_GENERATOR_CONFIG } from './constants';
-import type { AvatarGeneratorConfig, TwoLevelPartial } from './types';
+import type { AvatarGeneratorConfig, GummyGridConfig } from './types';
 import { mergeObjectsRecursively } from './utils';
 
 class GummyGrid {
@@ -12,7 +12,7 @@ class GummyGrid {
   grid: Grid;
   svg: SVG;
 
-  constructor(config?: TwoLevelPartial<AvatarGeneratorConfig>) {
+  constructor(config?: GummyGridConfig) {
     this.config = mergeObjectsRecursively(
       DEFAULT_AVATAR_GENERATOR_CONFIG,
       config ?? {}
@@ -74,7 +74,7 @@ class GummyGrid {
   }
 
   private connectLockedColorWeights() {
-    const { colorWeights } = this.config.randomizer.bias;
+    const colorWeights = this.config.randomizer.bias.colorWeights ?? {};
     let weights;
     for (const colorCategory of this.svg.getLockedColors()) {
       if (colorCategory in colorWeights) {

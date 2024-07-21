@@ -1,7 +1,7 @@
 import type { GridConfig } from '@/grid/types';
 import type { ColorCategory, SVGConfig } from '@/svg/types';
 
-export type RandomizerConfig = {
+type RandomizerConfig = {
   salt: number;
   bias: {
     cellFillProbability?: number;
@@ -15,6 +15,10 @@ export type AvatarGeneratorConfig = {
   svg: SVGConfig;
 };
 
-export type TwoLevelPartial<T> = {
-  [K in keyof T]?: Partial<T[K]>;
-};
+type DeepPartial<T> = T extends object
+  ? {
+      [P in keyof T]?: DeepPartial<T[P]>;
+    }
+  : T;
+
+export type GummyGridConfig = DeepPartial<AvatarGeneratorConfig>;

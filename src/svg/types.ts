@@ -11,7 +11,7 @@ export type SVGInnerConfig = {
   lockColors: ColorCategory[] | 'all';
   flow: boolean;
   gutter: number;
-  cellRounding: { inner?: number; outer?: number };
+  cellRounding: { inner: number; outer: number };
   strokeWidth: number;
   paintOrder: 'stroke' | 'normal';
   strokeLineJoin: 'miter' | 'miter-clip' | 'round' | 'bevel' | 'arcs';

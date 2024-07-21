@@ -139,7 +139,7 @@ class SVG {
       );
     } else if (colors.dropShadow?.length && !('dropShadow' in filters)) {
       console.log(
-        "⚠️  so colors.dropShadow won't have any effect if filters.dropShadow is not specified"
+        "⚠️  colors.dropShadow won't have any effect if filters.dropShadow is not specified"
       );
     }
   }

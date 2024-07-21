@@ -28,6 +28,7 @@ class GummyGrid {
     this.rand.setSeed(value);
     this.grid.build();
     this.svg.buildFrom(this.grid.iterateCells());
+    return this.svg;
   }
 
   private initializeRandomizer() {
@@ -77,14 +78,14 @@ class GummyGrid {
   private connectLockedColorWeights() {
     const colorWeights = this.config.randomizer.bias.colorWeights ?? {};
     let weights;
-    for (const colorCategory of this.svg.getLockedColors()) {
+    for (const colorCategory of this.svg._getLockedColors()) {
       if (colorCategory in colorWeights) {
         weights = colorWeights[colorCategory]!;
         break;
       }
     }
     if (!weights) return;
-    for (const colorCategory of this.svg.getLockedColors()) {
+    for (const colorCategory of this.svg._getLockedColors()) {
       colorWeights[colorCategory] = weights!;
     }
   }

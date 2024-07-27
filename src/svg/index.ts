@@ -2,6 +2,7 @@ let fs: typeof import('fs');
 
 import type Cell from '@/grid/cell';
 import type { CellCoordinates } from '@/grid/cell/types';
+import path from 'path';
 import { SVG_DATA_PREFIX } from './constants';
 import {
   ColorCategory,
@@ -78,19 +79,14 @@ class SVG {
   }
 
   async writeFile(filename: string) {
-    if (typeof window !== 'undefined') {
-      this.writeFileInBrowser(filename);
-    } else if (typeof require !== 'undefined') {
-      await this.writeFileInNode(filename);
-    }
-  }
-
-  private async writeFileInNode(filename: string) {
     fs ??= await import('fs');
-    fs.writeFileSync(`${filename.replace(/\.svg$/, '')}.svg`, this.toString());
+    filename = `${filename.replace(/\.svg$/, '')}.svg`;
+    const dirname = path.dirname(filename);
+    if (!fs.existsSync(dirname)) fs.mkdirSync(dirname);
+    fs.writeFileSync(filename, this.toString());
   }
 
-  private writeFileInBrowser(filename: string) {
+  downloadFile(filename: string) {
     const blob = this.toBlob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

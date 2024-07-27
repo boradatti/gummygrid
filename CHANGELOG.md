@@ -16,7 +16,8 @@
 
 ### Minor Changes
 
-- 1dc8c68: - `GummyGridConfig` and `SVGColor` types now available to import
+- 1dc8c68: some minor additions:
+  - `GummyGridConfig` and `SVGColor` types now available to import
   - `GummyGridConfig` now with recursively optional fields
 
 ## 0.1.0

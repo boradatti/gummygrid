@@ -1,5 +1,11 @@
 # gummygrid
 
+## 1.0.1
+
+### Patch Changes
+
+- bd04538: added readme
+
 ## 1.0.0
 
 ### Major Changes

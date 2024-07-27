@@ -1,5 +1,11 @@
 # gummygrid
 
+## 1.0.0
+
+### Major Changes
+
+- 2e00e54: `SVG.writeFile` (async, runs on server) and `SVG.downloadFile` (sync, runs in browser) are now separate methods
+
 ## 0.2.1
 
 ### Patch Changes

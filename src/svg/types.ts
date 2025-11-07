@@ -35,7 +35,7 @@ export type SVGInnerConfig = SVGSharedInnerConfig & {
   };
 };
 
-export type SVGWithRandomizerInnerConfig = SVGInnerConfig & {
+export type SVGWithRandomizerInnerConfig = Omit<SVGInnerConfig, 'colors'> & {
   colors: {
     background?: SVGColor[];
     cellFill?: SVGColor[];

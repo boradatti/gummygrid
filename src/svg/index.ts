@@ -12,25 +12,31 @@ import {
   SVGColor,
   SVGGradientColor,
   SVGGradientTag,
+  SVGInnerConfig,
   SVGWithRandomizerInnerConfig,
   Stop,
 } from './types';
 import { isEmptyObject, toTrainCase } from './utils';
 
-class SVG {
-  private string: string = '';
-  private readonly config: Readonly<SVGWithRandomizerInnerConfig>;
-  private readonly calculated: Readonly<SVGCalculatedValues>;
+interface SharedSVGInterface {
+  _validateConfig: () => void;
+  _getAllColors: () => ColorsByCategory;
+}
 
-  constructor(config: SVGWithRandomizerInnerConfig) {
+class SVG implements SharedSVGInterface {
+  protected string: string = '';
+  protected readonly config: Readonly<SVGInnerConfig>;
+  protected readonly calculated: Readonly<SVGCalculatedValues>;
+
+  constructor(config: SVGInnerConfig) {
     this.config = config;
-    this.validateConfig();
+    this._validateConfig();
     this.calculated = this.getCalculatedValues();
   }
 
   buildFrom(cells: Iterable<Cell>) {
     const backgroundWH = this.calculated.backgroundWH.toFixed(2);
-    const colors = this.getAllColors();
+    const colors = this._getAllColors();
     const gradientTags = this.getGradientSVGTags(colors);
 
     const svgEls: string[] = [
@@ -66,14 +72,6 @@ class SVG {
     return new Blob([this.toString()], { type: SVG_DATA_PREFIX });
   }
 
-  get _lockedColors(): ColorCategory[] {
-    if (this.config.lockColors == 'all') {
-      return this.colorCategories;
-    } else {
-      return this.config.lockColors;
-    }
-  }
-
   async toBuffer() {
     return Buffer.from(this.toString());
   }
@@ -99,77 +97,21 @@ class SVG {
     URL.revokeObjectURL(url);
   }
 
-  private validateConfig() {
+  _validateConfig() {
     this.validateCellRounding();
-    this.validateColorArrays();
-    this.validateLockedColorArrays();
   }
 
-  private validateCellRounding() {
+  _getAllColors(): ColorsByCategory {
+    // todo: check on this later
+    return this.config.colors as ColorsByCategory;
+  }
+
+  protected validateCellRounding() {
     const { inner, outer } = this.config.cellRounding;
     if (inner < 0 || inner > 1 || outer < 0 || outer > 1)
       throw new Error(
         'Inner and outer rounding should both be numbers between 0 and 1'
       );
-  }
-
-  private validateColorArrays() {
-    const { colors, strokeWidth, filters } = this.config;
-    if (colors.background?.length == 0 || colors.cellFill?.length == 0)
-      throw new Error(
-        'colors.cellFill and colors.background must be arrays of length greater than 0'
-      );
-    if (strokeWidth > 0 && colors.cellStroke?.length == 0) {
-      console.log(
-        "⚠️  strokeWidth won't have any effect if colors.cellStroke is not specified"
-      );
-    }
-    if (!strokeWidth && colors.cellStroke?.length) {
-      console.log(
-        "⚠️  colors.cellStroke won't have any effect if strokeWidth is 0 or unspecified"
-      );
-    }
-    if ('dropShadow' in filters && colors.dropShadow?.length == 0) {
-      console.log(
-        "⚠️  filters.dropShadow won't have any effect if colors.dropShadow is not specified"
-      );
-    } else if (colors.dropShadow?.length && !('dropShadow' in filters)) {
-      console.log(
-        "⚠️  colors.dropShadow won't have any effect if filters.dropShadow is not specified"
-      );
-    }
-  }
-
-  private validateLockedColorArrays() {
-    let lockedLength: number;
-    const lockColors = this._lockedColors;
-    for (const colorCategory of lockColors) {
-      const colors = this.getColorsFromCategory(colorCategory);
-      lockedLength ??= colors.length;
-      if (colors.length != lockedLength)
-        throw new Error(
-          `All the color arrays specified in lockColors (${lockColors.join(
-            ', '
-          )}) must be be specified and have equal length`
-        );
-    }
-  }
-
-  private pickColorIdx(category: ColorCategory) {
-    const colors = this.getColorsFromCategory(category);
-
-    return this.config.inner.colorIdxPicker({
-      category,
-      colors,
-    });
-  }
-
-  private getColorsFromCategory(category: ColorCategory) {
-    return this.config.colors[category] ?? [];
-  }
-
-  private hasColorsInCategory(category: ColorCategory) {
-    return this.getColorsFromCategory(category).length > 0;
   }
 
   private isGradientColor(color: SVGColor): color is SVGGradientColor {
@@ -277,36 +219,6 @@ class SVG {
       backgroundWH,
       cellRadius: { outer: rOuter, inner: rInner },
     };
-  }
-
-  private isLockedColor(category: ColorCategory) {
-    return (
-      this.config.lockColors == 'all' ||
-      this.config.lockColors.includes(category)
-    );
-  }
-
-  private getAllColors(): ColorsByCategory {
-    let res = {} as any;
-
-    const lockedColors = this._lockedColors;
-
-    let lockedIdx: number;
-    if (lockedColors.length) {
-      const lockedColor = lockedColors[0]!;
-      lockedIdx = this.pickColorIdx(lockedColor);
-    }
-
-    for (const category of this.colorCategories) {
-      const colors = this.getColorsFromCategory(category);
-      if (this.isLockedColor(category)) {
-        res[category] = colors[lockedIdx!];
-      } else if (this.hasColorsInCategory(category)) {
-        res[category] = colors[this.pickColorIdx(category)];
-      }
-    }
-
-    return res as ColorsByCategory;
   }
 
   private getGradientSVGTags(colors: ColorsByCategory): GradientSVGTagMap {
@@ -560,9 +472,124 @@ class SVG {
     return svg + `</${tag}>`;
   }
 
-  private get colorCategories() {
+  protected get colorCategories() {
     return Object.keys(this.config.colors) as ColorCategory[];
   }
 }
 
-export default SVG;
+class SVGWithRandomizer extends SVG {
+  protected string: string = '';
+  // @ts-ignore impractical
+  declare protected readonly config: Readonly<SVGWithRandomizerInnerConfig>;
+  declare protected readonly calculated: Readonly<SVGCalculatedValues>;
+
+  constructor(config: SVGWithRandomizerInnerConfig) {
+    // @ts-ignore same here
+    super(config);
+  }
+
+  _validateConfig() {
+    this.validateCellRounding();
+    this.validateColorArrays();
+    this.validateLockedColorArrays();
+  }
+
+  _getAllColors(): ColorsByCategory {
+    let res = {} as any;
+
+    const lockedColors = this.lockedColors;
+
+    let lockedIdx: number;
+    if (lockedColors.length) {
+      const lockedColor = lockedColors[0]!;
+      lockedIdx = this.pickColorIdx(lockedColor);
+    }
+
+    for (const category of this.colorCategories) {
+      const colors = this.getColorsFromCategory(category);
+      if (this.isLockedColor(category)) {
+        res[category] = colors[lockedIdx!];
+      } else if (this.hasColorsInCategory(category)) {
+        res[category] = colors[this.pickColorIdx(category)];
+      }
+    }
+
+    return res as ColorsByCategory;
+  }
+
+  private isLockedColor(category: ColorCategory) {
+    return (
+      this.config.lockColors == 'all' ||
+      this.config.lockColors.includes(category)
+    );
+  }
+
+  private pickColorIdx(category: ColorCategory) {
+    const colors = this.getColorsFromCategory(category);
+
+    return this.config.inner.colorIdxPicker({
+      category,
+      colors,
+    });
+  }
+
+  private getColorsFromCategory(category: ColorCategory) {
+    return this.config.colors[category] ?? [];
+  }
+
+  private hasColorsInCategory(category: ColorCategory) {
+    return this.getColorsFromCategory(category).length > 0;
+  }
+
+  private validateColorArrays() {
+    const { colors, strokeWidth, filters } = this.config;
+    if (colors.background?.length == 0 || colors.cellFill?.length == 0)
+      throw new Error(
+        'colors.cellFill and colors.background must be arrays of length greater than 0'
+      );
+    if (strokeWidth > 0 && colors.cellStroke?.length == 0) {
+      console.log(
+        "⚠️  strokeWidth won't have any effect if colors.cellStroke is not specified"
+      );
+    }
+    if (!strokeWidth && colors.cellStroke?.length) {
+      console.log(
+        "⚠️  colors.cellStroke won't have any effect if strokeWidth is 0 or unspecified"
+      );
+    }
+    if ('dropShadow' in filters && colors.dropShadow?.length == 0) {
+      console.log(
+        "⚠️  filters.dropShadow won't have any effect if colors.dropShadow is not specified"
+      );
+    } else if (colors.dropShadow?.length && !('dropShadow' in filters)) {
+      console.log(
+        "⚠️  colors.dropShadow won't have any effect if filters.dropShadow is not specified"
+      );
+    }
+  }
+
+  private validateLockedColorArrays() {
+    let lockedLength: number;
+    const lockColors = this.lockedColors;
+    for (const colorCategory of lockColors) {
+      const colors = this.getColorsFromCategory(colorCategory);
+      lockedLength ??= colors.length;
+      if (colors.length != lockedLength)
+        throw new Error(
+          `All the color arrays specified in lockColors (${lockColors.join(
+            ', '
+          )}) must be be specified and have equal length`
+        );
+    }
+  }
+
+  get lockedColors(): ColorCategory[] {
+    if (this.config.lockColors == 'all') {
+      return this.colorCategories;
+    } else {
+      return this.config.lockColors;
+    }
+  }
+}
+
+export default SVGWithRandomizer;

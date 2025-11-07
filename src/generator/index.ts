@@ -1,16 +1,17 @@
 import Grid from '@/grid';
 import Randomizer from '@/randomizer';
 import { WeightLengthMismatchError } from '@/randomizer/errors';
-import SVG from '@/svg';
+import SVGWithRandomizer from '@/svg';
 import { DEFAULT_AVATAR_GENERATOR_CONFIG } from './constants';
 import type { AvatarGeneratorConfig, GummyGridConfig } from './types';
 import { mergeObjectsRecursively } from './utils';
+import { HideUnderscoreMethods } from '@/types';
 
 class GummyGrid {
   config: AvatarGeneratorConfig;
   rand: Randomizer;
   grid: Grid;
-  svg: SVG;
+  svg: HideUnderscoreMethods<SVGWithRandomizer>;
 
   constructor(config?: GummyGridConfig) {
     this.config = mergeObjectsRecursively(
@@ -52,7 +53,7 @@ class GummyGrid {
   }
 
   private initializeSVG() {
-    return new SVG({
+    return new SVGWithRandomizer({
       ...this.config.svg,
       inner: {
         colorIdxPicker: ({ category, colors }) => {
@@ -78,14 +79,14 @@ class GummyGrid {
   private connectLockedColorWeights() {
     const colorWeights = this.config.randomizer.bias.colorWeights ?? {};
     let weights;
-    for (const colorCategory of this.svg._lockedColors) {
+    for (const colorCategory of this.svg.lockedColors) {
       if (colorCategory in colorWeights) {
         weights = colorWeights[colorCategory]!;
         break;
       }
     }
     if (!weights) return;
-    for (const colorCategory of this.svg._lockedColors) {
+    for (const colorCategory of this.svg.lockedColors) {
       colorWeights[colorCategory] = weights!;
     }
   }

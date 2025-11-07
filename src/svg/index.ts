@@ -317,15 +317,14 @@ class SVG {
       dropShadow: '',
     };
 
-    for (const [category, color] of Object.entries(colors)) {
+    const entries = Object.entries(colors) as [ColorCategory, SVGColor][];
+    for (const [category, color] of entries) {
       if (!this.isGradientColor(color)) continue;
       const { type, attrs, stops } = color;
-      // @ts-ignore
       tags[category] = this.formatGradientTag({
         tag: type,
         attrs,
         stops,
-        // @ts-ignore
         category,
       });
     }

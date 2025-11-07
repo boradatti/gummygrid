@@ -21,4 +21,4 @@ type DeepPartial<T> = T extends object
     }
   : T;
 
-export type GummyGridConfig = DeepPartial<AvatarGeneratorConfig>;
+export type PartialAvatarGeneratorConfig = DeepPartial<AvatarGeneratorConfig>;

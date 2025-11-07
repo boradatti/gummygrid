@@ -3,7 +3,10 @@ import Randomizer from '@/randomizer';
 import { WeightLengthMismatchError } from '@/randomizer/errors';
 import { SVGWithRandomizer } from '@/svg';
 import { DEFAULT_AVATAR_GENERATOR_CONFIG } from './constants';
-import type { AvatarGeneratorConfig, GummyGridConfig } from './types';
+import type {
+  AvatarGeneratorConfig,
+  PartialAvatarGeneratorConfig,
+} from './types';
 import { mergeObjectsRecursively } from '../../utils/helpers';
 import { HideUnderscoreMethods } from '@/utils/types';
 
@@ -13,7 +16,7 @@ class AvatarGenerator {
   grid: GridWithRandomizer;
   svg: HideUnderscoreMethods<SVGWithRandomizer>;
 
-  constructor(config?: GummyGridConfig) {
+  constructor(config?: PartialAvatarGeneratorConfig) {
     this.config = mergeObjectsRecursively(
       DEFAULT_AVATAR_GENERATOR_CONFIG,
       config ?? {}

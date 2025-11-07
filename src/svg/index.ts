@@ -23,12 +23,14 @@ interface SharedSVGInterface {
   _getAllColors: () => ColorsByCategory;
 }
 
-class SVG implements SharedSVGInterface {
+class SVG<Config extends SVGInnerConfig = SVGInnerConfig>
+  implements SharedSVGInterface
+{
   protected string: string = '';
-  protected readonly config: Readonly<SVGInnerConfig>;
+  protected readonly config: Readonly<Config>;
   protected readonly calculated: Readonly<SVGCalculatedValues>;
 
-  constructor(config: SVGInnerConfig) {
+  constructor(config: Config) {
     this.config = config;
     this._validateConfig();
     this.calculated = this.getCalculatedValues();
@@ -477,14 +479,11 @@ class SVG implements SharedSVGInterface {
   }
 }
 
-class SVGWithRandomizer extends SVG {
-  protected string: string = '';
+class SVGWithRandomizer<
+  Config extends SVGWithRandomizerInnerConfig = SVGWithRandomizerInnerConfig,
   // @ts-ignore impractical
-  declare protected readonly config: Readonly<SVGWithRandomizerInnerConfig>;
-  declare protected readonly calculated: Readonly<SVGCalculatedValues>;
-
-  constructor(config: SVGWithRandomizerInnerConfig) {
-    // @ts-ignore same here
+> extends SVG<Config> {
+  constructor(config: Config) {
     super(config);
   }
 

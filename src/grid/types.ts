@@ -1,5 +1,8 @@
-export type GridInnerConfig = {
+export type GridSharedInnerConfig = {
   size: number | { rows: number; columns: number };
+};
+
+export type GridWithRandomizerInnerConfig = GridSharedInnerConfig & {
   verticalSymmetry: boolean;
   ensureFill: {
     topBottom?: boolean;
@@ -11,4 +14,9 @@ export type GridInnerConfig = {
   };
 };
 
-export type GridConfig = Omit<GridInnerConfig, 'inner'>;
+export type GridConfig = GridSharedInnerConfig;
+
+export type GridWithRandomizerConfig = Omit<
+  GridWithRandomizerInnerConfig,
+  'inner'
+>;

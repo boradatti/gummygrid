@@ -12,17 +12,17 @@ import {
   SVGColor,
   SVGGradientColor,
   SVGGradientTag,
-  SVGInnerConfig,
+  SVGWithRandomizerInnerConfig,
   Stop,
 } from './types';
 import { isEmptyObject, toTrainCase } from './utils';
 
 class SVG {
   private string: string = '';
-  private readonly config: Readonly<SVGInnerConfig>;
+  private readonly config: Readonly<SVGWithRandomizerInnerConfig>;
   private readonly calculated: Readonly<SVGCalculatedValues>;
 
-  constructor(config: SVGInnerConfig) {
+  constructor(config: SVGWithRandomizerInnerConfig) {
     this.config = config;
     this.validateConfig();
     this.calculated = this.getCalculatedValues();
@@ -199,13 +199,13 @@ class SVG {
         --ptn-width: ${this.calculated.ptnWidth}px;
         --ptn-height: ${this.calculated.ptnHeight}px;
       }
-    
+
       .background {
         width: 100%;
         height: 100%;
         fill: var(--color-background);
       }
-    
+
       .pattern {
         fill: var(--color-cell-fill);
         stroke: var(--color-cell-stroke);

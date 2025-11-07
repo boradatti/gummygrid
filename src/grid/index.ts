@@ -1,13 +1,13 @@
 import Cell from './cell';
 import type { CellCoordinates } from './cell/types';
-import { GridInnerConfig } from './types';
+import { GridWithRandomizerInnerConfig } from './types';
 
 class Grid {
-  private readonly config: GridInnerConfig;
+  private readonly config: GridWithRandomizerInnerConfig;
   private readonly grid: Array<Array<Cell>>;
   public readonly size: Readonly<{ rows: number; columns: number }>;
 
-  constructor(config: GridInnerConfig) {
+  constructor(config: GridWithRandomizerInnerConfig) {
     this.config = config;
     this.size = this.getNormalizedSize();
     this.grid = this.getInitialGrid();

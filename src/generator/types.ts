@@ -1,5 +1,5 @@
-import type { GridConfig } from '@/grid/types';
-import type { ColorCategory, SVGConfig } from '@/svg/types';
+import type { GridWithRandomizerConfig } from '@/grid/types';
+import type { ColorCategory, SVGWithRandomizerConfig } from '@/svg/types';
 
 type RandomizerConfig = {
   salt: number;
@@ -11,8 +11,8 @@ type RandomizerConfig = {
 
 export type AvatarGeneratorConfig = {
   randomizer: RandomizerConfig;
-  grid: GridConfig;
-  svg: SVGConfig;
+  grid: GridWithRandomizerConfig;
+  svg: SVGWithRandomizerConfig;
 };
 
 type DeepPartial<T> = T extends object

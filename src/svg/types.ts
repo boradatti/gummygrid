@@ -1,14 +1,7 @@
-import type { GridConfig } from '@/grid/types';
+import type { GridWithRandomizerConfig } from '@/grid/types';
 
-export type SVGInnerConfig = {
+type SVGSharedInnerConfig = {
   patternAreaRatio: number;
-  colors: {
-    background?: SVGColor[];
-    cellFill?: SVGColor[];
-    cellStroke?: SVGColor[];
-    dropShadow?: string[];
-  };
-  lockColors: ColorCategory[] | 'all';
   flow: boolean;
   gutter: number;
   cellRounding: { inner: number; outer: number };
@@ -29,7 +22,28 @@ export type SVGInnerConfig = {
   };
   inner: {
     cellSize: number;
-    gridSize: Exclude<GridConfig['size'], number>;
+    gridSize: Exclude<GridWithRandomizerConfig['size'], number>;
+  };
+};
+
+export type SVGInnerConfig = SVGSharedInnerConfig & {
+  colors: {
+    background?: SVGColor;
+    cellFill?: SVGColor;
+    cellStroke?: SVGColor;
+    dropShadow?: string;
+  };
+};
+
+export type SVGWithRandomizerInnerConfig = SVGSharedInnerConfig & {
+  colors: {
+    background?: SVGColor[];
+    cellFill?: SVGColor[];
+    cellStroke?: SVGColor[];
+    dropShadow?: string[];
+  };
+  lockColors: ColorCategory[] | 'all';
+  inner: SVGSharedInnerConfig['inner'] & {
     colorIdxPicker: (options: {
       category: ColorCategory;
       colors: SVGColor[];
@@ -45,6 +59,11 @@ export type SVGCalculatedValues = {
 };
 
 export type SVGConfig = Omit<SVGInnerConfig, 'inner'>;
+
+export type SVGWithRandomizerConfig = Omit<
+  SVGWithRandomizerInnerConfig,
+  'inner'
+>;
 
 export type SVGGradientTag = 'radialGradient' | 'linearGradient';
 
@@ -87,7 +106,7 @@ export type SVGColor =
 
 export type SVGGradientColor = Exclude<SVGColor, string>;
 
-export type ColorCategory = keyof SVGConfig['colors'];
+export type ColorCategory = keyof SVGWithRandomizerConfig['colors'];
 
 export type ColorsByCategory = { [K in ColorCategory]: SVGColor };
 

@@ -1,4 +1,4 @@
-import Grid from '@/grid';
+import GridWithRandomizer from '@/grid';
 import Randomizer from '@/randomizer';
 import { WeightLengthMismatchError } from '@/randomizer/errors';
 import SVGWithRandomizer from '@/svg';
@@ -10,7 +10,7 @@ import { HideUnderscoreMethods } from '@/types';
 class GummyGrid {
   config: AvatarGeneratorConfig;
   rand: Randomizer;
-  grid: Grid;
+  grid: GridWithRandomizer;
   svg: HideUnderscoreMethods<SVGWithRandomizer>;
 
   constructor(config?: GummyGridConfig) {
@@ -37,7 +37,7 @@ class GummyGrid {
   }
 
   private initializeGrid() {
-    return new Grid({
+    return new GridWithRandomizer({
       ...this.config.grid,
       inner: {
         fillDecider: () => {

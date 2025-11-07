@@ -1,42 +1,44 @@
 import Cell from './cell';
 import type { CellCoordinates } from './cell/types';
-import { GridWithRandomizerInnerConfig } from './types';
+import { GridSharedInnerConfig, GridWithRandomizerInnerConfig } from './types';
 
-class Grid {
-  private readonly config: GridWithRandomizerInnerConfig;
-  private readonly grid: Array<Array<Cell>>;
+export class Grid<
+  Config extends GridSharedInnerConfig = GridSharedInnerConfig,
+> {
+  protected readonly config: Config;
+  protected readonly grid: Array<Array<Cell>>;
   public readonly size: Readonly<{ rows: number; columns: number }>;
 
-  constructor(config: GridWithRandomizerInnerConfig) {
+  constructor(config: Config) {
     this.config = config;
     this.size = this.getNormalizedSize();
     this.grid = this.getInitialGrid();
   }
 
-  wannaFill() {
-    return this.config.inner.fillDecider();
+  private getNormalizedSize() {
+    const [rows, columns] =
+      typeof this.config.size == 'number'
+        ? [this.config.size, this.config.size]
+        : [this.config.size.rows, this.config.size.columns];
+    if (
+      rows <= 0 ||
+      columns <= 0 ||
+      !Number.isInteger(rows) ||
+      !Number.isInteger(columns)
+    )
+      throw new Error('Rows and columns must both be a positive integer');
+    return { rows, columns };
   }
 
-  pickNumber(min: number, max: number) {
-    return this.config.inner.numberPicker(min, max);
-  }
-
-  build() {
-    this.generateCells();
-    if (this.needsTopBottomCells()) this.ensureTopBottomCells();
-    if (this.needsLeftRightCells()) this.ensureLeftRightCells();
-  }
-
-  getCell({ row, col }: CellCoordinates) {
-    return this.grid[row]?.[col];
-  }
-
-  isHorizontallyOddSized() {
-    return this.size.columns % 2 !== 0;
-  }
-
-  isVerticallyOddSized() {
-    return this.size.rows % 2 !== 0;
+  private getInitialGrid() {
+    const grid: typeof this.grid = [];
+    for (const row of this.iterateRows()) {
+      grid[row] = [];
+      for (const col of this.iterateColumns()) {
+        grid[row]![col] = new Cell(this, { row, col });
+      }
+    }
+    return grid;
   }
 
   clear() {
@@ -69,34 +71,65 @@ class Grid {
     }
   }
 
-  private isVerticallySymmetrical() {
-    return this.config.verticalSymmetry == true;
+  private *iterateRows() {
+    for (let r = 0; r < this.size.rows; r++) {
+      yield r;
+    }
   }
 
-  private getNormalizedSize() {
-    const [rows, columns] =
-      typeof this.config.size == 'number'
-        ? [this.config.size, this.config.size]
-        : [this.config.size.rows, this.config.size.columns];
-    if (
-      rows <= 0 ||
-      columns <= 0 ||
-      !Number.isInteger(rows) ||
-      !Number.isInteger(columns)
-    )
-      throw new Error('Rows and columns must both be a positive integer');
-    return { rows, columns };
+  private *iterateColumns() {
+    for (let c = 0; c < this.size.columns; c++) {
+      yield c;
+    }
   }
 
-  private getInitialGrid() {
-    const grid: typeof this.grid = [];
-    for (const row of this.iterateRows()) {
-      grid[row] = [];
-      for (const col of this.iterateColumns()) {
-        grid[row]![col] = new Cell(this, { row, col });
+  isHorizontallyOddSized() {
+    return this.size.columns % 2 !== 0;
+  }
+
+  isVerticallyOddSized() {
+    return this.size.rows % 2 !== 0;
+  }
+
+  getCell({ row, col }: CellCoordinates) {
+    return this.grid[row]?.[col];
+  }
+}
+
+class GridWithRandomizer<
+  Config extends GridWithRandomizerInnerConfig = GridWithRandomizerInnerConfig,
+> extends Grid<Config> {
+  constructor(config: Config) {
+    super(config);
+  }
+
+  private *iterateFillalbleColumns() {
+    // iterate up to middle column
+    // (inclusive if grid is odd-zied, exclusive if even-sized)
+    for (let c = 0; c < Math.ceil(this.size.columns / 2); c++) {
+      yield c;
+    }
+  }
+
+  private *iterateFillableRows() {
+    const rowLimit = this.isVerticallySymmetrical()
+      ? Math.ceil(this.size.rows / 2)
+      : this.size.rows;
+    for (let r = 0; r < rowLimit; r++) {
+      yield r;
+    }
+  }
+
+  private *iterateFillableCells() {
+    for (const row of this.iterateFillableRows()) {
+      for (const col of this.iterateFillalbleColumns()) {
+        yield this.grid[row]![col]!;
       }
     }
-    return grid;
+  }
+
+  private isVerticallySymmetrical() {
+    return this.config.verticalSymmetry == true;
   }
 
   private needsTopBottomCells() {
@@ -181,42 +214,19 @@ class Grid {
     return lastColumn.some((cell) => cell.isFilled());
   }
 
-  private *iterateRows() {
-    for (let r = 0; r < this.size.rows; r++) {
-      yield r;
-    }
+  wannaFill() {
+    return this.config.inner.fillDecider();
   }
 
-  private *iterateColumns() {
-    for (let c = 0; c < this.size.columns; c++) {
-      yield c;
-    }
+  pickNumber(min: number, max: number) {
+    return this.config.inner.numberPicker(min, max);
   }
 
-  private *iterateFillalbleColumns() {
-    // iterate up to middle column
-    // (inclusive if grid is odd-zied, exclusive if even-sized)
-    for (let c = 0; c < Math.ceil(this.size.columns / 2); c++) {
-      yield c;
-    }
-  }
-
-  private *iterateFillableRows() {
-    const rowLimit = this.isVerticallySymmetrical()
-      ? Math.ceil(this.size.rows / 2)
-      : this.size.rows;
-    for (let r = 0; r < rowLimit; r++) {
-      yield r;
-    }
-  }
-
-  private *iterateFillableCells() {
-    for (const row of this.iterateFillableRows()) {
-      for (const col of this.iterateFillalbleColumns()) {
-        yield this.grid[row]![col]!;
-      }
-    }
+  build() {
+    this.generateCells();
+    if (this.needsTopBottomCells()) this.ensureTopBottomCells();
+    if (this.needsLeftRightCells()) this.ensureLeftRightCells();
   }
 }
 
-export default Grid;
+export default GridWithRandomizer;

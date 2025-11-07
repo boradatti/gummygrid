@@ -1,10 +1,11 @@
-import type Grid from '@/grid';
+import type GridWithRandomizer from '@/grid';
 import {
   CELL_NEIGHBOR_CORNERS,
   CELL_NEIGHBOR_DIRECTIONS,
   CELL_NEIGHBOR_SIDES,
 } from './constants';
 import { CellCoordinates, CellNeighborDirection } from './types';
+import { Grid } from '@/grid';
 
 class Cell {
   private grid: Grid;

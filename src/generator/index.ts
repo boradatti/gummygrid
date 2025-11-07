@@ -1,7 +1,7 @@
-import GridWithRandomizer from '@/grid';
+import { GridWithRandomizer } from '@/grid';
 import Randomizer from '@/randomizer';
 import { WeightLengthMismatchError } from '@/randomizer/errors';
-import SVGWithRandomizer from '@/svg';
+import { SVGWithRandomizer } from '@/svg';
 import { DEFAULT_AVATAR_GENERATOR_CONFIG } from './constants';
 import type { AvatarGeneratorConfig, GummyGridConfig } from './types';
 import { mergeObjectsRecursively } from './utils';

@@ -23,7 +23,7 @@ interface SharedSVGInterface {
   _getAllColors: () => ColorsByCategory;
 }
 
-class SVG<Config extends SVGInnerConfig = SVGInnerConfig>
+export class SVG<Config extends SVGInnerConfig = SVGInnerConfig>
   implements SharedSVGInterface
 {
   protected string: string = '';
@@ -479,7 +479,7 @@ class SVG<Config extends SVGInnerConfig = SVGInnerConfig>
   }
 }
 
-class SVGWithRandomizer<
+export class SVGWithRandomizer<
   Config extends SVGWithRandomizerInnerConfig = SVGWithRandomizerInnerConfig,
   // @ts-ignore impractical
 > extends SVG<Config> {
@@ -590,5 +590,3 @@ class SVGWithRandomizer<
     }
   }
 }
-
-export default SVGWithRandomizer;

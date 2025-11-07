@@ -96,7 +96,7 @@ export class Grid<
   }
 }
 
-class GridWithRandomizer<
+export class GridWithRandomizer<
   Config extends GridWithRandomizerInnerConfig = GridWithRandomizerInnerConfig,
 > extends Grid<Config> {
   constructor(config: Config) {
@@ -228,5 +228,3 @@ class GridWithRandomizer<
     if (this.needsLeftRightCells()) this.ensureLeftRightCells();
   }
 }
-
-export default GridWithRandomizer;

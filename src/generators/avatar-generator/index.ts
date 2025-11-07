@@ -4,10 +4,10 @@ import { WeightLengthMismatchError } from '@/randomizer/errors';
 import { SVGWithRandomizer } from '@/svg';
 import { DEFAULT_AVATAR_GENERATOR_CONFIG } from './constants';
 import type { AvatarGeneratorConfig, GummyGridConfig } from './types';
-import { mergeObjectsRecursively } from './utils';
-import { HideUnderscoreMethods } from '@/types';
+import { mergeObjectsRecursively } from '../../utils/helpers';
+import { HideUnderscoreMethods } from '@/utils/types';
 
-class GummyGrid {
+class AvatarGenerator {
   config: AvatarGeneratorConfig;
   rand: Randomizer;
   grid: GridWithRandomizer;
@@ -92,4 +92,4 @@ class GummyGrid {
   }
 }
 
-export default GummyGrid;
+export default AvatarGenerator;

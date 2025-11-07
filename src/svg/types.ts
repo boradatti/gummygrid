@@ -35,7 +35,7 @@ export type SVGInnerConfig = SVGSharedInnerConfig & {
   };
 };
 
-export type SVGWithRandomizerInnerConfig = SVGSharedInnerConfig & {
+export type SVGWithRandomizerInnerConfig = SVGInnerConfig & {
   colors: {
     background?: SVGColor[];
     cellFill?: SVGColor[];
@@ -43,7 +43,7 @@ export type SVGWithRandomizerInnerConfig = SVGSharedInnerConfig & {
     dropShadow?: string[];
   };
   lockColors: ColorCategory[] | 'all';
-  inner: SVGSharedInnerConfig['inner'] & {
+  inner: SVGInnerConfig['inner'] & {
     colorIdxPicker: (options: {
       category: ColorCategory;
       colors: SVGColor[];

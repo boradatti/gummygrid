@@ -7,8 +7,6 @@ export function mergeObjectsRecursively(target, ...sources) {
   if (!sources.length) return target;
   const source = sources.shift();
 
-  console.log({ target, source });
-
   if (isObject(target) && isObject(source)) {
     for (const key in source) {
       if (isObject(source[key])) {

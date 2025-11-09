@@ -10,6 +10,7 @@ import {
   GradientSVGTagMap,
   SVGCalculatedValues,
   SVGColor,
+  SVGConfig,
   SVGGradientColor,
   SVGGradientTag,
   SVGInnerConfig,
@@ -36,7 +37,7 @@ export class SVG<Config extends SVGInnerConfig = SVGInnerConfig>
     this.calculated = this.getCalculatedValues();
   }
 
-  buildFrom(cells: Iterable<Cell>) {
+  buildFrom(iterateCells: () => Iterable<Cell>) {
     const backgroundWH = this.calculated.backgroundWH.toFixed(2);
     const colors = this._getAllColors();
     const gradientTags = this.getGradientSVGTags(colors);
@@ -48,7 +49,7 @@ export class SVG<Config extends SVGInnerConfig = SVGInnerConfig>
       gradientTags.cellFill,
       gradientTags.cellStroke,
       `<rect class="background" />`,
-      `<path class="pattern" d="${this.drawCompletePath(cells)}" />`,
+      `<path class="pattern" d="${this.drawCompletePath(iterateCells)}" />`,
       '</svg>',
     ];
 
@@ -246,10 +247,10 @@ export class SVG<Config extends SVGInnerConfig = SVGInnerConfig>
     return tags;
   }
 
-  private drawCompletePath(cells: Iterable<Cell>) {
+  protected drawCompletePath(iterateCells: () => Iterable<Cell>) {
     let pathData = '';
 
-    for (const cell of cells) {
+    for (const cell of iterateCells()) {
       const coords = this.getRawCellCoordinates(cell);
 
       if (cell.isFilled()) {
@@ -588,5 +589,15 @@ export class SVGWithRandomizer<
     } else {
       return this.config.lockColors;
     }
+  }
+}
+
+export class SVGWithQRAlignmentFill<
+  Config extends SVGInnerConfig = SVGInnerConfig,
+> extends SVG<Config> {
+  protected drawCompletePath(iterateCells: () => Iterable<Cell>) {
+    let path = super.drawCompletePath(iterateCells);
+    // todo: fill out alignments if necessary
+    return path;
   }
 }

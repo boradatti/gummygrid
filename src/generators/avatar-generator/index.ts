@@ -31,7 +31,7 @@ class AvatarGenerator {
     this.grid.clear();
     this.rand.setSeed(value);
     this.grid.build();
-    this.svg.buildFrom(this.grid.iterateCells());
+    this.svg.buildFrom(() => this.grid.iterateCells());
     return this.svg;
   }
 

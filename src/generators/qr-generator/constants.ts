@@ -1,6 +1,10 @@
 import type { QrCodeGeneratorConfig } from './types';
 
 export const DEFAULT_QRCODE_GENERATOR_CONFIG: QrCodeGeneratorConfig = {
+  qr: {
+    typeNumber: 0,
+    errorCorrectionLevel: 'L',
+  },
   svg: {
     patternAreaRatio: 0.675,
     colors: {

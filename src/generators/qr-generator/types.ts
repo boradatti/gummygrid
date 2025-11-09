@@ -3,6 +3,10 @@ import type { SVGConfig } from '@/svg/types';
 import { DeepPartial } from '@/utils/types';
 
 export type QrCodeGeneratorConfig = {
+  qr: {
+    typeNumber: TypeNumber;
+    errorCorrectionLevel: ErrorCorrectionLevel;
+  };
   svg: SVGConfig;
 };
 

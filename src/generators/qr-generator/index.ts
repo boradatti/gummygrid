@@ -38,7 +38,9 @@ class QrCodeGenerator {
   }
 
   private getQrMatrixFrom(value: string) {
-    const qr = qrcode(0, 'L');
+    const { typeNumber, errorCorrectionLevel } = this.config.qr;
+
+    const qr = qrcode(typeNumber, errorCorrectionLevel);
     qr.addData(value);
     qr.make();
 

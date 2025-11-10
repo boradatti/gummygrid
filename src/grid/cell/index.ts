@@ -1,4 +1,3 @@
-import type GridWithRandomizer from '@/grid';
 import {
   CELL_NEIGHBOR_CORNERS,
   CELL_NEIGHBOR_DIRECTIONS,
@@ -22,19 +21,6 @@ class Cell {
     this.pooled = null;
   }
 
-  markPooled(value: boolean) {
-    this.pooled = value;
-  }
-
-  isEdgeCell() {
-    return (
-      this.row == 0 ||
-      this.row == this.grid.size.rows - 1 ||
-      this.col == 0 ||
-      this.col == this.grid.size.columns - 1
-    );
-  }
-
   *iterateAllNeighbors() {
     for (const direction of CELL_NEIGHBOR_DIRECTIONS) {
       const neighbor = this.getNeighbor(direction);
@@ -51,10 +37,6 @@ class Cell {
         yield neighbor;
       }
     }
-  }
-
-  belongsToPool() {
-    return this.pooled;
   }
 
   fill() {

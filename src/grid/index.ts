@@ -95,12 +95,13 @@ export class Grid<
     return this.grid[row]?.[col];
   }
 
-  buildFromMatrix(matrix: Array<Array<1 | 0>>) {
-    // todo: validate size
-
-    for (let row = 0; row < matrix.length; row++) {
-      for (let col = 0; col < matrix[0]!.length; col++) {
-        if (matrix[row]![col] == 1) {
+  buildFromQr(opts: {
+    size: number;
+    isFilled: (coords: { row: number; col: number }) => boolean;
+  }) {
+    for (let row = 0; row < opts.size; row++) {
+      for (let col = 0; col < opts.size; col++) {
+        if (opts.isFilled({ row, col })) {
           this.getCell({ row, col })!.fill();
         }
       }

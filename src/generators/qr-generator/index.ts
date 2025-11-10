@@ -20,10 +20,8 @@ class QrCodeGenerator {
 
   buildFrom(value: string) {
     const qr = QRCode.create(value, this.config.qr);
-    const qrMatrix = this.getQrMatrixFrom(qr);
-    const size = qrMatrix.length;
 
-    const grid = new Grid({ size });
+    const grid = new Grid({ size: qr.modules.size });
     const svg = new SVGWithQRAlignmentFill({
       ...this.config.svg,
       inner: {
@@ -32,24 +30,13 @@ class QrCodeGenerator {
       },
     });
 
-    grid.buildFromMatrix(qrMatrix);
+    grid.buildFromQr({
+      size: qr.modules.size,
+      isFilled: ({ row, col }) => !!qr.modules.get(row, col),
+    }); 
     svg.buildFrom(() => grid.iterateCells());
 
     return svg;
-  }
-
-  private getQrMatrixFrom(qr: QRCode.QRCode) {
-    const size = qr.modules.size;
-    const matrix = [];
-    for (let row = 0; row < size; row++) {
-      const rowArr = [];
-      for (let col = 0; col < size; col++) {
-        rowArr.push(qr.modules.get(row, col));
-      }
-      matrix.push(rowArr);
-    }
-
-    return matrix as Array<Array<1 | 0>>;
   }
 }
 

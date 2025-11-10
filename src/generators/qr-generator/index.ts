@@ -1,12 +1,12 @@
 import { Grid } from '@/grid';
-import { SVG, SVGWithQRAlignmentFill } from '@/svg';
+import QRCode from 'qrcode';
+import { SVGWithQRAlignmentFill } from '@/svg';
 import { DEFAULT_QRCODE_GENERATOR_CONFIG } from './constants';
 import type {
   PartialQrCodeGeneratorConfig,
   QrCodeGeneratorConfig,
 } from './types';
 import { mergeObjectsRecursively } from '../../utils/helpers';
-import qrcode from 'qrcode-generator';
 
 class QrCodeGenerator {
   config: QrCodeGeneratorConfig;
@@ -19,8 +19,9 @@ class QrCodeGenerator {
   }
 
   buildFrom(value: string) {
-    const qrMatrix = this.getQrMatrixFrom(value);
-    const size = { rows: qrMatrix.length, columns: qrMatrix[0]?.length ?? 0 };
+    const qr = QRCode.create(value, this.config.qr);
+    const qrMatrix = this.getQrMatrixFrom(qr);
+    const size = qrMatrix.length;
 
     const grid = new Grid({ size });
     const svg = new SVGWithQRAlignmentFill({
@@ -37,19 +38,13 @@ class QrCodeGenerator {
     return svg;
   }
 
-  private getQrMatrixFrom(value: string) {
-    const { typeNumber, errorCorrectionLevel } = this.config.qr;
-
-    const qr = qrcode(typeNumber, errorCorrectionLevel);
-    qr.addData(value);
-    qr.make();
-
-    const size = qr.getModuleCount();
+  private getQrMatrixFrom(qr: QRCode.QRCode) {
+    const size = qr.modules.size;
     const matrix = [];
     for (let row = 0; row < size; row++) {
       const rowArr = [];
       for (let col = 0; col < size; col++) {
-        rowArr.push(qr.isDark(row, col) ? 1 : 0);
+        rowArr.push(qr.modules.get(row, col));
       }
       matrix.push(rowArr);
     }

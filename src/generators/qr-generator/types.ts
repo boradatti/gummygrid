@@ -1,12 +1,9 @@
-import { GridConfig } from '@/grid/types';
 import type { SVGConfig } from '@/svg/types';
 import { DeepPartial } from '@/utils/types';
+import { QRCodeOptions } from 'qrcode';
 
 export type QrCodeGeneratorConfig = {
-  qr: {
-    typeNumber: TypeNumber;
-    errorCorrectionLevel: ErrorCorrectionLevel;
-  };
+  qr: QRCodeOptions;
   svg: SVGConfig;
 };
 

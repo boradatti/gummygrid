@@ -37,7 +37,7 @@ export class SVG<Config extends SVGInnerConfig = SVGInnerConfig>
     this.calculated = this.getCalculatedValues();
   }
 
-  buildFrom(iterateCells: () => Iterable<Cell>) {
+  protected build(opts: { drawPath: () => string }) {
     const backgroundWH = this.calculated.backgroundWH.toFixed(2);
     const colors = this._getAllColors();
     const gradientTags = this.getGradientSVGTags(colors);
@@ -49,13 +49,17 @@ export class SVG<Config extends SVGInnerConfig = SVGInnerConfig>
       gradientTags.cellFill,
       gradientTags.cellStroke,
       `<rect class="background" />`,
-      `<path class="pattern" d="${this.drawCompletePath(iterateCells)}" />`,
+      `<path class="pattern" d="${opts.drawPath()}" />`,
       '</svg>',
     ];
 
     const svg = svgEls.join('');
 
     this.string = svg;
+  }
+
+  buildFromCells(iterateCells: () => Iterable<Cell>) {
+    this.build({ drawPath: () => this.drawCompletePath(iterateCells) });
   }
 
   toString() {
@@ -592,12 +596,32 @@ export class SVGWithRandomizer<
   }
 }
 
-export class SVGWithQRAlignmentFill<
+export class SVGWithStableQRPatterns<
   Config extends SVGInnerConfig = SVGInnerConfig,
 > extends SVG<Config> {
-  protected drawCompletePath(iterateCells: () => Iterable<Cell>) {
-    let path = super.drawCompletePath(iterateCells);
+  buildFromQr(iterateCells: () => Iterable<Cell>, qrSize: number) {
+    this.build({
+      drawPath: () => this.drawCompleteQrPath(iterateCells, qrSize),
+    });
+  }
+
+  private drawCompleteQrPath(
+    iterateCells: () => Iterable<Cell>,
+    qrSize: number
+  ) {
+    let path = this.drawCompletePath(iterateCells);
+    this.connectQrFinderCells(iterateCells, qrSize);
     // todo: fill out alignments if necessary
     return path;
+  }
+
+  private connectQrFinderCells(
+    iterateCells: () => Iterable<Cell>,
+    qrSize: number
+  ) {
+    for (const cell of iterateCells()) {
+      if (!cell.isFilled()) continue;
+      // todo: implement
+    }
   }
 }

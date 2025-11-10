@@ -1,6 +1,6 @@
 import { Grid } from '@/grid';
 import QRCode from 'qrcode';
-import { SVGWithQRAlignmentFill } from '@/svg';
+import { SVGWithStableQRPatterns } from '@/svg';
 import { DEFAULT_QRCODE_GENERATOR_CONFIG } from './constants';
 import type {
   PartialQrCodeGeneratorConfig,
@@ -22,7 +22,7 @@ class QrCodeGenerator {
     const qr = QRCode.create(value, this.config.qr);
 
     const grid = new Grid({ size: qr.modules.size });
-    const svg = new SVGWithQRAlignmentFill({
+    const svg = new SVGWithStableQRPatterns({
       ...this.config.svg,
       inner: {
         cellSize: 10,
@@ -33,8 +33,8 @@ class QrCodeGenerator {
     grid.buildFromQr({
       size: qr.modules.size,
       isFilled: ({ row, col }) => !!qr.modules.get(row, col),
-    }); 
-    svg.buildFrom(() => grid.iterateCells());
+    });
+    svg.buildFromCells(() => grid.iterateCells());
 
     return svg;
   }

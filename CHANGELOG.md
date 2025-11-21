@@ -1,5 +1,11 @@
 # gummygrid
 
+## 2.0.0-next.0
+
+### Major Changes
+
+- added qr code generator functionality (will only produce scannable codes w/ gutter: 0)
+
 ## 1.0.1
 
 ### Patch Changes

@@ -20,6 +20,7 @@ type SVGSharedInnerConfig = {
     saturate?: string;
     sepia?: string;
   };
+  outputSize?: number;
   inner: {
     cellSize: number;
     gridSize: Exclude<GridWithRandomizerConfig['size'], number>;

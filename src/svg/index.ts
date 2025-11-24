@@ -29,7 +29,7 @@ export class SVG<Config extends SVGInnerConfig = SVGInnerConfig>
 {
   protected string: string = '';
   protected readonly config: Readonly<Config>;
-  protected readonly calculated: Readonly<SVGCalculatedValues>;
+  protected calculated: Readonly<SVGCalculatedValues>;
 
   constructor(config: Config) {
     this.config = config;
@@ -269,7 +269,27 @@ export class SVG<Config extends SVGInnerConfig = SVGInnerConfig>
     return !isEmptyObject(this.config.filters);
   }
 
+  public calculateCellSizeFromOutputSize() {
+    const desiredSize = this.config.outputSize!;
+
+    const { rows, columns } = this.config.inner.gridSize;
+    const { gutter, patternAreaRatio, strokeWidth } = this.config;
+
+    const widthNumerator =
+      desiredSize * patternAreaRatio - gutter * (columns - 1) - strokeWidth;
+    const heightNumerator =
+      desiredSize * patternAreaRatio - gutter * (rows - 1) - strokeWidth;
+
+    const cellSizeByWidth = widthNumerator / columns;
+    const cellSizeByHeight = heightNumerator / rows;
+    const cellSize = Math.min(cellSizeByWidth, cellSizeByHeight);
+
+    this.config.inner.cellSize = cellSize;
+  }
+
   private getCalculatedValues() {
+    if (this.config.outputSize) this.calculateCellSizeFromOutputSize();
+
     const { rows, columns } = this.config.inner.gridSize;
     const { cellSize } = this.config.inner;
     const { gutter, patternAreaRatio, strokeWidth } = this.config;

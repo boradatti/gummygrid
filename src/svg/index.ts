@@ -37,19 +37,55 @@ export class SVG<Config extends SVGInnerConfig = SVGInnerConfig>
     this.calculated = this.getCalculatedValues();
   }
 
-  protected build(opts: { drawPath: () => string }) {
+  private getPortableEls(colors: ColorsByCategory, drawPath: () => string) {
+    const attrs = this.getSvgAttrValues(colors);
+
+    const translateX =
+      (this.calculated.backgroundWH -
+        this.calculated.ptnWidth +
+        this.config.strokeWidth) /
+      2;
+    const translateY =
+      (this.calculated.backgroundWH -
+        this.calculated.ptnHeight +
+        this.config.strokeWidth) /
+      2;
+
+    return {
+      background: `<rect width="100%" height="100%" fill="${attrs.backgroundColor}" />`,
+      pattern: `<path transform="translate(${translateX}, ${translateY})" fill="${attrs.cellFillColor}" stroke="${attrs.cellStrokeColor}" stroke-width="${attrs.strokeWidth}" stroke-linejoin="${attrs.strokeLineJoin}" paint-order="${attrs.paintOrder}" ${this.hasFilters() ? `filter="${this.formatFilters(attrs.dropShadowColor as string)}"` : ''} d="${drawPath()}" />`,
+    };
+  }
+
+  protected build(opts: {
+    drawPath: () => string;
+    outputFormat?: 'web' | 'portable';
+  }) {
+    opts.outputFormat ??= 'portable';
+
     const backgroundWH = this.calculated.backgroundWH.toFixed(2);
     const colors = this._getAllColors();
     const gradientTags = this.getGradientSVGTags(colors);
 
+    const portableEls =
+      opts.outputFormat == 'portable'
+        ? this.getPortableEls(colors, opts.drawPath)
+        : null;
+
     const svgEls: string[] = [
       `<svg xmlns="http://www.w3.org/2000/svg" width="${backgroundWH}" height="${backgroundWH}" viewbox="0 0 ${backgroundWH} ${backgroundWH}">`,
-      `<style>${this.formatCSS(colors)}</style>`,
+      opts.outputFormat == 'web'
+        ? `<style>${this.formatCSS(colors)}</style>`
+        : '',
       gradientTags.background,
       gradientTags.cellFill,
       gradientTags.cellStroke,
-      `<rect class="background" />`,
-      `<path class="pattern" d="${opts.drawPath()}" />`,
+      opts.outputFormat == 'web'
+        ? `<rect class="background" />`
+        : portableEls!.background, // todo: change
+      opts.outputFormat == 'web'
+        ? `<path class="pattern" d="${opts.drawPath()}" />`
+        : portableEls!.pattern, // todo: change
       '</svg>',
     ];
 
@@ -58,8 +94,14 @@ export class SVG<Config extends SVGInnerConfig = SVGInnerConfig>
     this.string = svg;
   }
 
-  buildFromCells(iterateCells: () => Iterable<Cell>) {
-    this.build({ drawPath: () => this.drawCompletePath(iterateCells) });
+  buildFromCells(
+    iterateCells: () => Iterable<Cell>,
+    outputFormat: 'web' | 'portable'
+  ) {
+    this.build({
+      drawPath: () => this.drawCompletePath(iterateCells),
+      outputFormat,
+    });
   }
 
   toString() {
@@ -125,28 +167,49 @@ export class SVG<Config extends SVGInnerConfig = SVGInnerConfig>
     return typeof color !== 'string';
   }
 
+  private getSvgAttrValues(colors: ColorsByCategory) {
+    const backgroundColor = this.isGradientColor(colors.background)
+      ? 'url(#gradient-background)'
+      : colors.background;
+
+    const cellFillColor = this.isGradientColor(colors.cellFill)
+      ? 'url(#gradient-cell-fill)'
+      : colors.cellFill;
+
+    const cellStrokeColor = this.isGradientColor(colors.cellStroke)
+      ? 'url(#gradient-cell-stroke)'
+      : colors.cellStroke;
+
+    const dropShadowColor = colors.dropShadow ? colors.dropShadow : null;
+
+    const { strokeWidth, strokeLineJoin, paintOrder } = this.config;
+    const { ptnWidth, ptnHeight } = this.calculated;
+
+    return {
+      backgroundColor,
+      cellFillColor,
+      cellStrokeColor,
+      dropShadowColor,
+      strokeWidth,
+      strokeLineJoin,
+      paintOrder,
+      ptnWidth,
+      ptnHeight,
+    };
+  }
+
   private formatCSS(colors: ColorsByCategory): string {
+    const attrs = this.getSvgAttrValues(colors);
+
     const css = `
       :root {
-        --color-background: ${
-          this.isGradientColor(colors.background)
-            ? 'url(#gradient-background)'
-            : colors.background
-        };
-        --color-cell-fill: ${
-          this.isGradientColor(colors.cellFill)
-            ? 'url(#gradient-cell-fill)'
-            : colors.cellFill
-        };
-        --color-cell-stroke: ${
-          this.isGradientColor(colors.cellStroke)
-            ? 'url(#gradient-cell-stroke)'
-            : colors.cellStroke
-        };
-        ${this.formatCSSDropShadow(colors.dropShadow as string)}
-        --stroke-width: ${this.config.strokeWidth}px;
-        --ptn-width: ${this.calculated.ptnWidth}px;
-        --ptn-height: ${this.calculated.ptnHeight}px;
+        --color-background: ${attrs.backgroundColor};
+        --color-cell-fill: ${attrs.cellFillColor};
+        --color-cell-stroke: ${attrs.cellStrokeColor};
+        ${attrs.dropShadowColor ? `--color-cell-drop-shadow: ${attrs.dropShadowColor};` : ''}
+        --stroke-width: ${attrs.strokeWidth}px;
+        --ptn-width: ${attrs.ptnWidth}px;
+        --ptn-height: ${attrs.ptnHeight}px;
       }
 
       .background {
@@ -159,9 +222,9 @@ export class SVG<Config extends SVGInnerConfig = SVGInnerConfig>
         fill: var(--color-cell-fill);
         stroke: var(--color-cell-stroke);
         stroke-width: var(--stroke-width);
-        stroke-linejoin: ${this.config.strokeLineJoin};
-        paint-order: ${this.config.paintOrder};
-        ${this.formatCSSFiltersDeclaration()}
+        stroke-linejoin: ${attrs.strokeLineJoin};
+        paint-order: ${attrs.paintOrder};
+        ${this.hasFilters() ? `filter: ${this.formatFilters()};` : ''}
         --transform-x: calc((100% - var(--ptn-width) + var(--stroke-width)) / 2);
         --transform-y: calc((100% - var(--ptn-height) + var(--stroke-width)) / 2);
         transform: translate(var(--transform-x), var(--transform-y));
@@ -184,24 +247,22 @@ export class SVG<Config extends SVGInnerConfig = SVGInnerConfig>
       .trim();
   }
 
-  private formatCSSDropShadow(dropShadowColor: string) {
-    if (!dropShadowColor) return '';
-    return `--color-cell-drop-shadow: ${dropShadowColor};`;
-  }
-
-  private formatCSSFiltersDeclaration() {
+  private formatFilters(dropShadowColor?: string) {
     if (!this.hasFilters()) return '';
     const values = [];
     for (const [key, value] of Object.entries(this.config.filters)) {
       const func = toTrainCase(key);
       if (key == 'dropShadow') {
-        const v = [...value, 'var(--color-cell-drop-shadow)'].join(' ');
+        const v = [
+          ...value,
+          dropShadowColor ?? 'var(--color-cell-drop-shadow)',
+        ].join(' ');
         values.push(`${func}(${v})`);
       } else {
         values.push(`${func}(${value})`);
       }
     }
-    return `filter: ${values.join(' ')};`;
+    return values.join(' ');
   }
 
   private hasFilters() {

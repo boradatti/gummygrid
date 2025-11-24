@@ -18,7 +18,7 @@ class QrCodeGenerator {
     ) as QrCodeGeneratorConfig;
   }
 
-  buildFrom(value: string) {
+  buildFrom(value: string, outputFormat: 'web' | 'portable' = 'portable') {
     const qr = QRCode.create(value, this.config.qr);
 
     const grid = new Grid({ size: qr.modules.size });
@@ -34,7 +34,7 @@ class QrCodeGenerator {
       size: qr.modules.size,
       isFilled: ({ row, col }) => !!qr.modules.get(row, col),
     });
-    svg.buildFromCells(() => grid.iterateCells());
+    svg.buildFromCells(() => grid.iterateCells(), outputFormat);
 
     return svg;
   }

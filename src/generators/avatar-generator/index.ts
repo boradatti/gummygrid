@@ -27,11 +27,11 @@ class AvatarGenerator {
     this.connectLockedColorWeights();
   }
 
-  buildFrom(value: string) {
+  buildFrom(value: string, outputFormat: 'web' | 'portable' = 'portable') {
     this.grid.clear();
     this.rand.setSeed(value);
     this.grid.build();
-    this.svg.buildFromCells(() => this.grid.iterateCells());
+    this.svg.buildFromCells(() => this.grid.iterateCells(), outputFormat);
     return this.svg;
   }
 

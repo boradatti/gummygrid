@@ -5,6 +5,7 @@
     "gummygrid": "1.0.1"
   },
   "changesets": [
-    "little-buses-rule"
+    "little-buses-rule",
+    "wet-lamps-raise"
   ]
 }

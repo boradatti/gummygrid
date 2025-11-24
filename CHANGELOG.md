@@ -1,5 +1,12 @@
 # gummygrid
 
+## 2.0.0-next.1
+
+### Minor Changes
+
+- 2b715ea: - allow choosing btw "portable" and "web" output formats for SVGs ("portable" is default, better fit when there's a need for rendering the svg in a non-browser environment, e.g. with the sharp library)
+  - allow setting custom svg output size
+
 ## 2.0.0-next.0
 
 ### Major Changes
